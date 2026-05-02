@@ -1,6 +1,6 @@
 import { Action, getOppositeAction } from "./actions";
 import { findCollidingGhosts } from "./collisions";
-import { POWER_PELLET_DURATION_TICKS, SCORE_VALUES } from "./constants";
+import { INITIAL_LIVES, POWER_PELLET_DURATION_TICKS, SCORE_VALUES } from "./constants";
 import { cloneGameState, createGameState } from "./gameState";
 import {
   getAvailableNeighbors,
@@ -234,10 +234,11 @@ export function stepGame(
 export function restartGame(
   state: GameState,
   seed = state.seed,
+  lives = INITIAL_LIVES,
 ): GameState {
   return createGameState({
     maze: state.maze,
-    lives: state.lives,
+    lives,
     seed,
   });
 }
