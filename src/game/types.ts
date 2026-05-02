@@ -1,6 +1,6 @@
 import type { Action } from "./actions";
 
-export type GameStatus = "running" | "paused" | "won" | "lost";
+export type GameStatus = "ready" | "running" | "paused" | "won" | "lost";
 
 export type GhostId = "blinky" | "pinky" | "inky" | "clyde";
 

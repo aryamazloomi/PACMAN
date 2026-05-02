@@ -50,6 +50,7 @@ describe("game core", () => {
     const state = createGameState();
     const result = advanceGame(state, Action.Left, START_DELAY_MS - SIMULATION_STEP_MS);
 
+    expect(state.status).toBe("ready");
     expect(result.state.pacman.position).toEqual(state.pacman.position);
     expect(result.state.readyDelayMs).toBeGreaterThan(0);
   });
@@ -112,6 +113,7 @@ describe("game core", () => {
 
     expect(firstCollision.events.lifeLost).toBe(true);
     expect(firstCollision.state.lives).toBe(state.lives - 1);
+    expect(firstCollision.state.status).toBe("ready");
     expect(firstCollision.state.readyDelayMs).toBeGreaterThan(0);
     expect(secondFrame.events.lifeLost).toBe(false);
     expect(secondFrame.state.lives).toBe(firstCollision.state.lives);

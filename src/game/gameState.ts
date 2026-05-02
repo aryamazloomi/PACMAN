@@ -17,6 +17,7 @@ export function createGameState(
 ): GameState {
   const maze = options.maze ?? createMaze();
   const seed = options.seed ?? DEFAULT_SEED;
+  const readyDelayMs = options.readyDelayMs ?? START_DELAY_MS;
 
   return {
     maze,
@@ -30,9 +31,9 @@ export function createGameState(
     steps: 0,
     seed,
     rngState: seed >>> 0,
-    status: "running",
+    status: readyDelayMs > 0 ? "ready" : "running",
     lastAction: Action.Stop,
-    readyDelayMs: options.readyDelayMs ?? START_DELAY_MS,
+    readyDelayMs,
     lastEvents: {
       pelletEaten: false,
       powerPelletEaten: false,

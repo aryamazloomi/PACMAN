@@ -150,6 +150,7 @@ function resolveGhostCollisions(state: GameState, events: StepEvents): boolean {
     return true;
   }
 
+  state.status = "ready";
   resetCharacters(state);
   return true;
 }
@@ -278,6 +279,10 @@ export function stepGame(
   state.pacman.desiredDirection = requestedAction;
 
   const activeElapsedMs = consumeReadyDelay(state, elapsedMs);
+
+  if (state.status === "ready" && state.readyDelayMs === 0) {
+    state.status = "running";
+  }
 
   if (activeElapsedMs > 0 && state.readyDelayMs === 0 && state.status === "running") {
     tickGhostTimers(state, activeElapsedMs);
