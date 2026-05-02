@@ -28,9 +28,9 @@ export function AgentSelector({
   return (
     <section className="panel control-panel">
       <div className="panel-header">
-        <div>
+        <div className="compact-panel-title">
+          <span className="panel-icon panel-icon-controller" aria-hidden="true" />
           <p className="panel-kicker">Controller</p>
-          <h2>Active stack</h2>
         </div>
       </div>
       <div className="controller-display">

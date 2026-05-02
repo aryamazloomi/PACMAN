@@ -322,6 +322,82 @@ a {
   margin-bottom: 1rem;
 }
 
+.compact-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.compact-panel-title .panel-kicker {
+  margin: 0;
+}
+
+.panel-icon {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(48, 208, 255, 0.28);
+  background: rgba(11, 25, 39, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(20, 66, 92, 0.35);
+}
+
+.panel-icon::before,
+.panel-icon::after {
+  content: "";
+  position: absolute;
+}
+
+.panel-icon-stats::before {
+  left: 4px;
+  bottom: 4px;
+  width: 3px;
+  height: 7px;
+  background: var(--cyan);
+  box-shadow:
+    5px -3px 0 0 var(--cyan),
+    10px -6px 0 0 var(--cyan);
+}
+
+.panel-icon-runtime::before {
+  inset: 6px 4px 6px 4px;
+  border-top: 2px solid var(--cyan);
+  border-right: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 50%;
+}
+
+.panel-icon-runtime::after {
+  top: 4px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  background: var(--cyan);
+  border-radius: 50%;
+}
+
+.panel-icon-controller::before {
+  left: 5px;
+  top: 5px;
+  width: 12px;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow:
+    0 5px 0 0 var(--cyan),
+    0 10px 0 0 var(--cyan);
+}
+
+.panel-icon-controller::after {
+  left: 8px;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  background: var(--cyan);
+  box-shadow:
+    4px 5px 0 0 var(--cyan),
+    -3px 10px 0 0 var(--cyan);
+}
+
 .panel-kicker,
 .dossier-kicker {
   margin: 0 0 0.45rem;

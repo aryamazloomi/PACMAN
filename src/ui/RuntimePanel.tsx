@@ -14,9 +14,9 @@ export function RuntimePanel({
   return (
     <section className="panel analytics-panel" id="runtime-analytics">
       <div className="panel-header">
-        <div>
+        <div className="compact-panel-title">
+          <span className="panel-icon panel-icon-runtime" aria-hidden="true" />
           <p className="panel-kicker">Runtime</p>
-          <h2>Active telemetry</h2>
         </div>
       </div>
       <div className="runtime-list">

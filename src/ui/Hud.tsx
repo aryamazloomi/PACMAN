@@ -26,9 +26,9 @@ export function Hud({
   return (
     <section className="panel stats-panel">
       <div className="panel-header">
-        <div>
+        <div className="compact-panel-title">
+          <span className="panel-icon panel-icon-stats" aria-hidden="true" />
           <p className="panel-kicker">Live Stats</p>
-          <h2>Runtime scoreboard</h2>
         </div>
         <span className="status-chip">{status}</span>
       </div>
