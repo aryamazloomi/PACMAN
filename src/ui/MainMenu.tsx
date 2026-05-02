@@ -6,27 +6,33 @@ interface MainMenuProps {
 
 export function MainMenu({ onStart, onResume, hasBegun }: MainMenuProps) {
   return (
-    <section className="panel hero-panel">
-      <p className="panel-kicker">Playable Portfolio Project</p>
-      <h1>Pac-Man AI</h1>
+    <section className="panel hero-panel" id="mission-brief">
+      <p className="panel-kicker">Operator Brief</p>
+      <h1>Browser-first Pac-Man control archive</h1>
       <p className="panel-copy">
-        Manual play is wired through the same action interface that the AI
-        controllers will use, so every agent can be compared inside one
-        deterministic browser-first game core.
+        Every controller in this project, from manual play to A* and behavior
+        trees, drives the same deterministic game core. That makes the page
+        useful as both a playable demo and a compact teaching lab for search,
+        heuristics, and decision policies.
       </p>
+      <div className="brief-chip-row">
+        <span className="meta-chip">React + TypeScript + Canvas</span>
+        <span className="meta-chip">Deterministic simulation</span>
+        <span className="meta-chip">Human and AI parity</span>
+      </div>
       <div className="hero-actions">
         <button className="primary-button" onClick={hasBegun ? onResume : onStart}>
-          {hasBegun ? "Resume Game" : "Start Game"}
+          {hasBegun ? "Resume Session" : "Start Session"}
         </button>
         {hasBegun && onStart ? (
           <button className="secondary-button" onClick={onStart}>
-            Restart Round
+            Deploy Fresh Seed
           </button>
         ) : null}
       </div>
       <div className="controls-list">
-        <p>Controls: Arrow keys or WASD to move.</p>
-        <p>Space or P pauses. R restarts. ESC opens the menu.</p>
+        <p>ARROWS / WASD: move Pac-Man using the same action API as the agents.</p>
+        <p>SPACE or P: pause the simulation. R: restart from the seed. ESC: reopen the dashboard.</p>
       </div>
     </section>
   );

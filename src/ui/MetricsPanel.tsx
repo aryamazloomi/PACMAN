@@ -3,6 +3,8 @@ import type { EvaluationMetrics } from "../evaluation/metrics";
 interface MetricsPanelProps {
   frightenedGhosts: number;
   lastReward: number;
+  stepCount: number;
+  seed: number;
   statusNote: string;
   loggingEnabled: boolean;
   logCount: number;
@@ -16,6 +18,8 @@ interface MetricsPanelProps {
 export function MetricsPanel({
   frightenedGhosts,
   lastReward,
+  stepCount,
+  seed,
   statusNote,
   loggingEnabled,
   logCount,
@@ -26,30 +30,27 @@ export function MetricsPanel({
   onRunEvaluation,
 }: MetricsPanelProps) {
   return (
-    <section className="panel">
-      <p className="panel-kicker">Runtime Metrics</p>
-      <h2>Simulation snapshot</h2>
-      <div className="stats-row">
-        <div className="stat-chip">
-          <span>Frightened Ghosts</span>
-          <strong>{frightenedGhosts}</strong>
-        </div>
-        <div className="stat-chip">
-          <span>Last Reward</span>
-          <strong>{lastReward.toFixed(2)}</strong>
-        </div>
-        <div className="stat-chip">
-          <span>Logged Steps</span>
-          <strong>{logCount}</strong>
+    <section className="panel analytics-panel" id="runtime-analytics">
+      <div className="panel-header">
+        <div>
+          <p className="panel-kicker">Runtime</p>
+          <h2>Metric analytics</h2>
         </div>
       </div>
-      <p className="panel-copy">{statusNote}</p>
-      <div className="hero-actions">
+      <div className="runtime-list">
+        <RuntimeRow label="Steps executed" value={stepCount.toLocaleString()} />
+        <RuntimeRow label="Last step reward" value={lastReward.toFixed(2)} />
+        <RuntimeRow label="Frightened ghosts" value={String(frightenedGhosts)} />
+        <RuntimeRow label="Logged steps" value={logCount.toLocaleString()} />
+        <RuntimeRow label="Simulation seed" value={`#${seed}`} />
+      </div>
+      <p className="panel-copy status-copy">{statusNote}</p>
+      <div className="hero-actions compact-actions">
         <button className="secondary-button" onClick={onToggleLogging}>
-          {loggingEnabled ? "Disable Logging" : "Enable Logging"}
+          {loggingEnabled ? "Pause Logging" : "Resume Logging"}
         </button>
         <button className="secondary-button" onClick={onExportLog}>
-          Export Trajectory
+          Export Log
         </button>
         <button
           className="primary-button"
@@ -60,16 +61,43 @@ export function MetricsPanel({
         </button>
       </div>
       {evaluationMetrics ? (
-        <div className="evaluation-summary">
-          <p>Avg score: {evaluationMetrics.averageScore.toFixed(1)}</p>
-          <p>Best score: {evaluationMetrics.bestScore.toFixed(0)}</p>
-          <p>Win rate: {(evaluationMetrics.winRate * 100).toFixed(0)}%</p>
-          <p>
-            Avg latency: {evaluationMetrics.averageActionLatencyMs.toFixed(2)}
-            ms
-          </p>
+        <div className="evaluation-grid">
+          <EvaluationCard
+            label="Avg score"
+            value={evaluationMetrics.averageScore.toFixed(1)}
+          />
+          <EvaluationCard
+            label="Best score"
+            value={evaluationMetrics.bestScore.toFixed(0)}
+          />
+          <EvaluationCard
+            label="Win rate"
+            value={`${(evaluationMetrics.winRate * 100).toFixed(0)}%`}
+          />
+          <EvaluationCard
+            label="Avg latency"
+            value={`${evaluationMetrics.averageActionLatencyMs.toFixed(2)} ms`}
+          />
         </div>
       ) : null}
     </section>
+  );
+}
+
+function RuntimeRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="runtime-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function EvaluationCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="evaluation-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
