@@ -1,6 +1,17 @@
 import { Action, getOppositeAction } from "./actions";
 import { findCollidingGhosts } from "./collisions";
-import { INITIAL_LIVES, POWER_PELLET_DURATION_TICKS, SCORE_VALUES } from "./constants";
+import {
+  FRIGHTENED_GHOST_MOVE_INTERVAL_MS,
+  GHOST_MOVE_INTERVAL_MS,
+  INITIAL_LIVES,
+  PACMAN_MOVE_INTERVAL_MS,
+  POWER_PELLET_DURATION_MS,
+  RESPAWN_DELAY_MS,
+  SCORE_VALUES,
+  SIMULATION_STEP_MS,
+  START_DELAY_MS,
+} from "./constants";
+import { createGhosts, createPacman } from "./entities";
 import { cloneGameState, createGameState } from "./gameState";
 import {
   getAvailableNeighbors,
@@ -26,25 +37,55 @@ function createStepEvents(): StepEvents {
   };
 }
 
-function resolveRequestedAction(
-  maze: Maze,
-  position: Position,
-  requestedAction: Action,
-  previousAction: Action,
-  events: StepEvents,
-): Action {
-  const legalActions = getLegalActions(maze, position);
+function getGhostMoveIntervalMs(ghost: GhostEntity): number {
+  return ghost.frightenedTimerMs > 0
+    ? FRIGHTENED_GHOST_MOVE_INTERVAL_MS
+    : GHOST_MOVE_INTERVAL_MS;
+}
 
-  if (legalActions.includes(requestedAction)) {
-    return requestedAction;
+function resetCharacters(state: GameState): void {
+  state.pacman = createPacman(state.maze);
+  state.ghosts = createGhosts(state.maze);
+}
+
+function consumeReadyDelay(state: GameState, elapsedMs: number): number {
+  if (state.readyDelayMs <= 0) {
+    return elapsedMs;
   }
 
-  if (requestedAction !== Action.Stop) {
+  const consumedMs = Math.min(state.readyDelayMs, elapsedMs);
+  state.readyDelayMs -= consumedMs;
+  return elapsedMs - consumedMs;
+}
+
+function tickGhostTimers(state: GameState, elapsedMs: number): void {
+  state.ghosts.forEach((ghost) => {
+    ghost.frightenedTimerMs = Math.max(0, ghost.frightenedTimerMs - elapsedMs);
+  });
+}
+
+function resolvePacmanDirection(
+  state: GameState,
+  events: StepEvents,
+): Action {
+  const legalActions = getLegalActions(state.maze, state.pacman.position);
+  const desiredDirection = state.pacman.desiredDirection;
+  const currentDirection = state.pacman.direction;
+
+  if (desiredDirection === Action.Stop) {
+    return Action.Stop;
+  }
+
+  if (legalActions.includes(desiredDirection)) {
+    return desiredDirection;
+  }
+
+  if (desiredDirection !== currentDirection) {
     events.wallBump = true;
   }
 
-  if (legalActions.includes(previousAction)) {
-    return previousAction;
+  if (legalActions.includes(currentDirection)) {
+    return currentDirection;
   }
 
   return Action.Stop;
@@ -62,7 +103,7 @@ function applyPelletCollection(state: GameState, events: StepEvents): void {
     state.score += SCORE_VALUES.powerPellet;
     events.powerPelletEaten = true;
     state.ghosts.forEach((ghost) => {
-      ghost.frightenedTicks = POWER_PELLET_DURATION_TICKS;
+      ghost.frightenedTimerMs = POWER_PELLET_DURATION_MS;
     });
   }
 
@@ -83,12 +124,13 @@ function resolveGhostCollisions(state: GameState, events: StepEvents): boolean {
   let lifeLost = false;
 
   collidingGhosts.forEach((ghost) => {
-    if (ghost.frightenedTicks > 0) {
+    if (ghost.frightenedTimerMs > 0) {
       events.ghostsEaten.push(ghost.id);
       state.score += SCORE_VALUES.ghost;
       ghost.position = { ...ghost.spawn };
-      ghost.direction = Action.Left;
-      ghost.frightenedTicks = 0;
+      ghost.direction = Action.Stop;
+      ghost.frightenedTimerMs = 0;
+      ghost.moveProgressMs = 0;
       return;
     }
 
@@ -101,20 +143,14 @@ function resolveGhostCollisions(state: GameState, events: StepEvents): boolean {
 
   state.lives -= 1;
   events.lifeLost = true;
+  state.readyDelayMs = RESPAWN_DELAY_MS;
 
   if (state.lives <= 0) {
     state.status = "lost";
     return true;
   }
 
-  const resetState = createGameState({
-    maze: state.maze,
-    lives: state.lives,
-    seed: state.seed,
-  });
-
-  state.pacman = resetState.pacman;
-  state.ghosts = resetState.ghosts;
+  resetCharacters(state);
   return true;
 }
 
@@ -123,7 +159,7 @@ function scoreGhostAction(ghost: GhostEntity, action: Action, pacmanPosition: Po
   const distanceToPacman = manhattanDistance(nextPosition, pacmanPosition);
   const distanceToScatter = manhattanDistance(nextPosition, ghost.scatterTarget);
 
-  if (ghost.frightenedTicks > 0) {
+  if (ghost.frightenedTimerMs > 0) {
     return distanceToPacman * 20 - distanceToScatter;
   }
 
@@ -160,33 +196,74 @@ function chooseGhostAction(
   return chooseBySeed(bestActions, rngState);
 }
 
-function moveGhosts(state: GameState): void {
+function moveGhosts(state: GameState, events: StepEvents, elapsedMs: number): void {
   let rngState = state.rngState;
 
-  state.ghosts.forEach((ghost) => {
+  for (const ghost of state.ghosts) {
+    if (state.status !== "running" || state.readyDelayMs > 0) {
+      break;
+    }
+
+    ghost.moveProgressMs += elapsedMs;
+    const moveIntervalMs = getGhostMoveIntervalMs(ghost);
+
+    if (ghost.moveProgressMs < moveIntervalMs) {
+      continue;
+    }
+
+    ghost.moveProgressMs -= moveIntervalMs;
     const choice = chooseGhostAction(state.maze, ghost, state.pacman.position, rngState);
     rngState = choice.rngState;
     ghost.direction = choice.action;
-    ghost.position = movePosition(ghost.position, choice.action);
 
-    if (ghost.frightenedTicks > 0) {
-      ghost.frightenedTicks -= 1;
+    if (choice.action !== Action.Stop) {
+      ghost.position = movePosition(ghost.position, choice.action);
     }
-  });
+
+    if (resolveGhostCollisions(state, events)) {
+      break;
+    }
+  }
 
   state.rngState = rngState;
+}
+
+function movePacman(state: GameState, events: StepEvents, elapsedMs: number): void {
+  if (state.status !== "running" || state.readyDelayMs > 0) {
+    return;
+  }
+
+  state.pacman.moveProgressMs += elapsedMs;
+
+  if (state.pacman.moveProgressMs < PACMAN_MOVE_INTERVAL_MS) {
+    return;
+  }
+
+  state.pacman.moveProgressMs -= PACMAN_MOVE_INTERVAL_MS;
+
+  const direction = resolvePacmanDirection(state, events);
+  state.pacman.direction = direction;
+
+  if (direction === Action.Stop) {
+    state.pacman.moveProgressMs = 0;
+    return;
+  }
+
+  state.pacman.position = movePosition(state.pacman.position, direction);
+  applyPelletCollection(state, events);
 }
 
 export function stepGame(
   previousState: GameState,
   requestedAction: Action,
+  elapsedMs = SIMULATION_STEP_MS,
 ): StepResult {
   const state = cloneGameState(previousState);
   const events = createStepEvents();
 
-  if (state.status !== "running") {
+  if (state.status === "paused" || state.status === "won" || state.status === "lost") {
     state.lastEvents = events;
-    state.lastAction = Action.Stop;
+    state.lastAction = requestedAction;
     state.reward = calculateReward(events);
     return {
       state,
@@ -197,27 +274,23 @@ export function stepGame(
   }
 
   state.steps += 1;
-  const resolvedAction = resolveRequestedAction(
-    state.maze,
-    state.pacman.position,
-    requestedAction,
-    state.pacman.direction,
-    events,
-  );
+  state.lastAction = requestedAction;
+  state.pacman.desiredDirection = requestedAction;
 
-  state.lastAction = resolvedAction;
-  state.pacman.direction = resolvedAction;
+  const activeElapsedMs = consumeReadyDelay(state, elapsedMs);
 
-  if (resolvedAction !== Action.Stop) {
-    state.pacman.position = movePosition(state.pacman.position, resolvedAction);
+  if (activeElapsedMs > 0 && state.readyDelayMs === 0 && state.status === "running") {
+    tickGhostTimers(state, activeElapsedMs);
+    movePacman(state, events, activeElapsedMs);
   }
 
-  applyPelletCollection(state, events);
+  const collidedBeforeGhostMove =
+    state.status === "running" && state.readyDelayMs === 0
+      ? resolveGhostCollisions(state, events)
+      : false;
 
-  const collidedBeforeGhostMove = resolveGhostCollisions(state, events);
   if (!collidedBeforeGhostMove && state.status === "running") {
-    moveGhosts(state);
-    resolveGhostCollisions(state, events);
+    moveGhosts(state, events, activeElapsedMs);
   }
 
   state.reward = calculateReward(events);
@@ -240,6 +313,7 @@ export function restartGame(
     maze: state.maze,
     lives,
     seed,
+    readyDelayMs: START_DELAY_MS,
   });
 }
 

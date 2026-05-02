@@ -1,4 +1,5 @@
 import { Action } from "../game/actions";
+import { PACMAN_MOVE_INTERVAL_MS } from "../game/constants";
 import type { GameStateView } from "../game/types";
 import { tileKey } from "../utils/grid";
 
@@ -9,7 +10,7 @@ import { AStarAgent } from "./AStarAgent";
 import { GhostAvoidanceAgent } from "./GhostAvoidanceAgent";
 
 function getReachableFrightenedGhostAction(state: GameStateView): Action | null {
-  const frightenedGhosts = state.ghosts.filter((ghost) => ghost.frightenedTicks > 0);
+  const frightenedGhosts = state.ghosts.filter((ghost) => ghost.frightenedTimerMs > 0);
 
   for (const ghost of frightenedGhosts) {
     const result = findAStarPath(
@@ -18,7 +19,11 @@ function getReachableFrightenedGhostAction(state: GameStateView): Action | null 
       new Set<string>([tileKey(ghost.position)]),
     );
 
-    if (result && result.path.length > 0 && result.cost <= ghost.frightenedTicks) {
+    if (
+      result &&
+      result.path.length > 0 &&
+      result.cost * PACMAN_MOVE_INTERVAL_MS <= ghost.frightenedTimerMs
+    ) {
       return getActionForStep(state.pacman.position, result.path[0]);
     }
   }

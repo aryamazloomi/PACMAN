@@ -146,8 +146,8 @@ function getDirectionAngle(direction: Action): number {
       return Math.PI / 2;
     case Action.Left:
       return Math.PI;
-    case Action.Right:
     case Action.Stop:
+    case Action.Right:
     default:
       return 0;
   }

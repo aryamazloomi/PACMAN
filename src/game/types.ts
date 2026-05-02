@@ -31,6 +31,8 @@ export interface PacmanEntity {
   position: Position;
   spawn: Position;
   direction: Action;
+  desiredDirection: Action;
+  moveProgressMs: number;
 }
 
 export interface GhostEntity {
@@ -39,7 +41,8 @@ export interface GhostEntity {
   position: Position;
   spawn: Position;
   direction: Action;
-  frightenedTicks: number;
+  frightenedTimerMs: number;
+  moveProgressMs: number;
   scatterTarget: Position;
 }
 
@@ -67,6 +70,7 @@ export interface GameState {
   status: GameStatus;
   lastAction: Action;
   lastEvents: StepEvents;
+  readyDelayMs: number;
 }
 
 export interface GameStateView {

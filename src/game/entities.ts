@@ -5,7 +5,9 @@ export function createPacman(maze: Maze): PacmanEntity {
   return {
     position: { ...maze.pacmanSpawn },
     spawn: { ...maze.pacmanSpawn },
-    direction: Action.Left,
+    direction: Action.Stop,
+    desiredDirection: Action.Stop,
+    moveProgressMs: 0,
   };
 }
 
@@ -15,8 +17,9 @@ export function createGhosts(maze: Maze): GhostEntity[] {
     color: spawn.color,
     position: { ...spawn.position },
     spawn: { ...spawn.position },
-    direction: Action.Left,
-    frightenedTicks: 0,
+    direction: Action.Stop,
+    frightenedTimerMs: 0,
+    moveProgressMs: 0,
     scatterTarget: { ...spawn.scatterTarget },
   }));
 }

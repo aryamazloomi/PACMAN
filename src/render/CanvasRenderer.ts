@@ -77,7 +77,7 @@ export class CanvasRenderer {
         tileSize: this.tileSize,
         x: ghost.position.x,
         y: ghost.position.y,
-        frightened: ghost.frightenedTicks > 0,
+        frightened: ghost.frightenedTimerMs > 0,
         color: ghost.color,
       });
     });
@@ -91,14 +91,18 @@ export class CanvasRenderer {
       now,
     });
 
-    if (state.status !== "running") {
+    if (state.status !== "running" || state.readyDelayMs > 0) {
       this.context.fillStyle = GAME_THEME.overlay;
       this.context.fillRect(0, 0, width, height);
       this.context.fillStyle = GAME_THEME.text;
       this.context.textAlign = "center";
       this.context.font = '700 28px "Trebuchet MS", sans-serif';
       this.context.fillText(
-        state.status === "won" ? "Level Cleared" : "Game Over",
+        state.status === "won"
+          ? "Level Cleared"
+          : state.status === "lost"
+            ? "Game Over"
+            : "Ready!",
         width / 2,
         height / 2,
       );

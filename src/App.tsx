@@ -11,7 +11,7 @@ import { RandomAgent } from "./controllers/RandomAgent";
 import { evaluateController } from "./evaluation/evaluateAgent";
 import type { EvaluationMetrics } from "./evaluation/metrics";
 import { Action } from "./game/actions";
-import { DEFAULT_SEED, GAME_TICK_MS } from "./game/constants";
+import { DEFAULT_SEED, MAX_FRAME_DELTA_MS, SIMULATION_STEP_MS } from "./game/constants";
 import { restartGame, stepGame } from "./game/engine";
 import { createGameState, getGameStateView } from "./game/gameState";
 import type { GameState, GameStatus } from "./game/types";
@@ -79,6 +79,9 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const stateRef = useRef(gameState);
+  const controllerIdRef = useRef(controllerId);
+  const showMenuRef = useRef(showMenu);
+  const pauseOverlayOpenRef = useRef(pauseOverlayOpen);
   const loggerRef = useRef(new TrajectoryLogger());
   const controllersRef = useRef<Record<string, Controller>>({
     human: humanController,
@@ -92,6 +95,18 @@ function App() {
   useEffect(() => {
     stateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    controllerIdRef.current = controllerId;
+  }, [controllerId]);
+
+  useEffect(() => {
+    showMenuRef.current = showMenu;
+  }, [showMenu]);
+
+  useEffect(() => {
+    pauseOverlayOpenRef.current = pauseOverlayOpen;
+  }, [pauseOverlayOpen]);
 
   useEffect(() => {
     writeStorage(CONTROLLER_STORAGE_KEY, controllerId);
@@ -115,8 +130,54 @@ function App() {
     rendererRef.current = new CanvasRenderer(canvasRef.current);
 
     let animationFrame = 0;
+    let lastFrameTime = 0;
+    let accumulatorMs = 0;
 
     const renderFrame = (now: number) => {
+      if (lastFrameTime === 0) {
+        lastFrameTime = now;
+      }
+
+      const frameDeltaMs = Math.min(now - lastFrameTime, MAX_FRAME_DELTA_MS);
+      lastFrameTime = now;
+
+      const shouldSimulate =
+        !showMenuRef.current &&
+        !pauseOverlayOpenRef.current &&
+        stateRef.current.status !== "paused" &&
+        stateRef.current.status !== "won" &&
+        stateRef.current.status !== "lost";
+
+      if (shouldSimulate) {
+        accumulatorMs += frameDeltaMs;
+        let advancedState = false;
+
+        while (accumulatorMs >= SIMULATION_STEP_MS) {
+          const activeController =
+            controllersRef.current[controllerIdRef.current] ?? humanController;
+          const view = getGameStateView(stateRef.current);
+          const action = activeController.selectAction(view);
+          const result = stepGame(stateRef.current, action, SIMULATION_STEP_MS);
+
+          loggerRef.current.log(activeController.name, view, action, result);
+          stateRef.current = result.state;
+          accumulatorMs -= SIMULATION_STEP_MS;
+          advancedState = true;
+
+          if (result.done) {
+            accumulatorMs = 0;
+            break;
+          }
+        }
+
+        if (advancedState) {
+          setGameState(stateRef.current);
+          setLogCount(loggerRef.current.getEntries().length);
+        }
+      } else {
+        accumulatorMs = 0;
+      }
+
       rendererRef.current?.render(stateRef.current, now);
       animationFrame = window.requestAnimationFrame(renderFrame);
     };
@@ -129,71 +190,97 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      if (showMenu || pauseOverlayOpen || stateRef.current.status !== "running") {
+    const resumeGameForInput = () => {
+      const shouldResume =
+        stateRef.current.status === "paused" && stateRef.current.lives > 0;
+
+      if (shouldResume) {
+        const nextState = {
+          ...stateRef.current,
+          status: "running" as const,
+        };
+
+        stateRef.current = nextState;
+        setGameState(nextState);
+      }
+
+      setShowMenu(false);
+      setHasBegun(true);
+      setPauseOverlayOpen(false);
+    };
+
+    const restartFromInput = () => {
+      resetControllers(DEFAULT_SEED);
+      loggerRef.current.clear();
+      setLogCount(0);
+      const nextState = restartGame(stateRef.current, DEFAULT_SEED);
+      stateRef.current = nextState;
+      setGameState(nextState);
+      setHasBegun(true);
+      setShowMenu(false);
+      setPauseOverlayOpen(false);
+    };
+
+    const togglePauseFromInput = () => {
+      if (showMenuRef.current) {
         return;
       }
 
-      const activeController = controllersRef.current[controllerId] ?? humanController;
-      const view = getGameStateView(stateRef.current);
-      const action = activeController.selectAction(view);
-      const result = stepGame(
-        stateRef.current,
-        action,
-      );
-      loggerRef.current.log(activeController.name, view, action, result);
+      if (stateRef.current.status === "won" || stateRef.current.status === "lost") {
+        return;
+      }
 
-      stateRef.current = result.state;
-      setGameState(result.state);
-      setLogCount(loggerRef.current.getEntries().length);
-    }, GAME_TICK_MS);
+      const nextStatus: GameStatus = pauseOverlayOpenRef.current ? "running" : "paused";
+      const nextState = {
+        ...stateRef.current,
+        status: nextStatus,
+      };
 
-    return () => {
-      window.clearInterval(intervalId);
+      stateRef.current = nextState;
+      setGameState(nextState);
+      setPauseOverlayOpen((currentValue) => !currentValue);
     };
-  }, [controllerId, pauseOverlayOpen, showMenu]);
 
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
 
       if (key === "arrowup" || key === "w") {
         event.preventDefault();
         humanController.setPendingAction(Action.Up);
-        resumeGameFromInput();
+        resumeGameForInput();
         return;
       }
 
       if (key === "arrowdown" || key === "s") {
         event.preventDefault();
         humanController.setPendingAction(Action.Down);
-        resumeGameFromInput();
+        resumeGameForInput();
         return;
       }
 
       if (key === "arrowleft" || key === "a") {
         event.preventDefault();
         humanController.setPendingAction(Action.Left);
-        resumeGameFromInput();
+        resumeGameForInput();
         return;
       }
 
       if (key === "arrowright" || key === "d") {
         event.preventDefault();
         humanController.setPendingAction(Action.Right);
-        resumeGameFromInput();
+        resumeGameForInput();
         return;
       }
 
       if (key === "r") {
         event.preventDefault();
-        handleRestart();
+        restartFromInput();
         return;
       }
 
       if (key === " " || key === "p") {
         event.preventDefault();
-        togglePause();
+        togglePauseFromInput();
         return;
       }
 
@@ -209,10 +296,10 @@ function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  });
+  }, []);
 
   const frightenedGhosts = gameState.ghosts.filter(
-    (ghost) => ghost.frightenedTicks > 0,
+    (ghost) => ghost.frightenedTimerMs > 0,
   ).length;
   const activeController = controllersRef.current[controllerId] ?? humanController;
 
@@ -300,7 +387,7 @@ function App() {
       const evaluationController = createController(controllerId, DEFAULT_SEED);
       const metrics = evaluateController(evaluationController, {
         episodes: 5,
-        maxStepsPerEpisode: 700,
+        maxStepsPerEpisode: 3600,
         seed: DEFAULT_SEED,
       });
 
@@ -336,6 +423,8 @@ function App() {
       ? "All pellets cleared. Restart or switch controllers to compare routes."
       : gameState.status === "lost"
         ? "Pac-Man is out of lives. Restart to try again from the same seed."
+        : gameState.readyDelayMs > 0
+          ? "Get ready. Characters are reset and movement resumes after a short delay."
         : pauseOverlayOpen
           ? "The simulation is paused."
           : `${activeController.name} is active. Switch controllers anytime to compare styles.`;

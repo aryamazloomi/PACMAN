@@ -3,7 +3,7 @@ import type { GameStateView, GhostEntity, Position } from "../game/types";
 import { manhattanDistance, movePosition, tileKey } from "../utils/grid";
 
 export function getThreatGhosts(state: GameStateView): readonly GhostEntity[] {
-  return state.ghosts.filter((ghost) => ghost.frightenedTicks <= 0);
+  return state.ghosts.filter((ghost) => ghost.frightenedTimerMs <= 0);
 }
 
 export function buildDangerMap(state: GameStateView): Map<string, number> {
@@ -62,7 +62,7 @@ export function distanceToNearestGhost(
 }
 
 export function countFrightenedGhosts(state: GameStateView): number {
-  return state.ghosts.filter((ghost) => ghost.frightenedTicks > 0).length;
+  return state.ghosts.filter((ghost) => ghost.frightenedTimerMs > 0).length;
 }
 
 export function hasPelletAt(state: GameStateView, position: Position): boolean {

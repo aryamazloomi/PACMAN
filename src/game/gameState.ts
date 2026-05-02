@@ -1,5 +1,5 @@
 import { Action } from "./actions";
-import { DEFAULT_SEED, INITIAL_LIVES } from "./constants";
+import { DEFAULT_SEED, INITIAL_LIVES, START_DELAY_MS } from "./constants";
 import { createGhosts, createPacman } from "./entities";
 import { createMaze } from "./maze";
 import { getLegalActions } from "./navigation";
@@ -9,6 +9,7 @@ export interface CreateGameStateOptions {
   maze?: Maze;
   lives?: number;
   seed?: number;
+  readyDelayMs?: number;
 }
 
 export function createGameState(
@@ -31,6 +32,7 @@ export function createGameState(
     rngState: seed >>> 0,
     status: "running",
     lastAction: Action.Stop,
+    readyDelayMs: options.readyDelayMs ?? START_DELAY_MS,
     lastEvents: {
       pelletEaten: false,
       powerPelletEaten: false,

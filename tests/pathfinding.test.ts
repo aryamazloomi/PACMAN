@@ -7,7 +7,7 @@ import { Action } from "../src/game/actions";
 
 describe("pathfinding", () => {
   it("finds the nearest pellet from the spawn with BFS", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     const leftPellet = tileKey({
       x: state.pacman.position.x - 1,
       y: state.pacman.position.y,
@@ -24,7 +24,7 @@ describe("pathfinding", () => {
   });
 
   it("maps the first path step back to a movement action", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     const result = findShortestPath(
       state.maze,
       state.pacman.position,
@@ -41,7 +41,7 @@ describe("pathfinding", () => {
   });
 
   it("applies weighted A* search to a reachable target", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     const target = tileKey({
       x: state.pacman.position.x + 1,
       y: state.pacman.position.y,

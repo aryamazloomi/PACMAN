@@ -6,7 +6,7 @@ export interface TrajectoryStep {
   controller: string;
   stateSummary: {
     pacman: { x: number; y: number };
-    ghostPositions: Array<{ id: string; x: number; y: number; frightenedTicks: number }>;
+    ghostPositions: Array<{ id: string; x: number; y: number; frightenedTimerMs: number }>;
     pelletsRemaining: number;
     powerPelletsRemaining: number;
     legalActions: readonly Action[];
@@ -58,7 +58,7 @@ export class TrajectoryLogger {
           id: ghost.id,
           x: ghost.position.x,
           y: ghost.position.y,
-          frightenedTicks: ghost.frightenedTicks,
+          frightenedTimerMs: ghost.frightenedTimerMs,
         })),
         pelletsRemaining: result.state.pellets.size,
         powerPelletsRemaining: result.state.powerPellets.size,

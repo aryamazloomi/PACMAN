@@ -10,7 +10,7 @@ import { evaluateController } from "../src/evaluation/evaluateAgent";
 
 describe("controllers", () => {
   it("RandomAgent returns a legal action", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     const agent = new RandomAgent(7);
     const action = agent.selectAction(getGameStateView(state));
 
@@ -18,14 +18,14 @@ describe("controllers", () => {
   });
 
   it("GreedyPelletAgent moves toward a nearby pellet", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     const agent = new GreedyPelletAgent();
 
     expect(agent.selectAction(getGameStateView(state))).toBe(Action.Left);
   });
 
   it("GhostAvoidanceAgent avoids immediate ghost danger when it can", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     state.ghosts[0].position = {
       x: state.pacman.position.x - 1,
       y: state.pacman.position.y,
@@ -40,7 +40,7 @@ describe("controllers", () => {
   });
 
   it("AStarAgent returns a legal action", () => {
-    const state = createGameState();
+    const state = createGameState({ readyDelayMs: 0 });
     const agent = new AStarAgent();
     const action = agent.selectAction(getGameStateView(state));
 
