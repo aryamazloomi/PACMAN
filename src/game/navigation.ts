@@ -4,6 +4,15 @@ import type { Maze, Position } from "./types";
 import { getNeighbors, movePosition, tileKey } from "../utils/grid";
 
 export function isWall(maze: Maze, position: Position): boolean {
+  if (
+    position.x < 0 ||
+    position.y < 0 ||
+    position.x >= maze.width ||
+    position.y >= maze.height
+  ) {
+    return true;
+  }
+
   return maze.walls.has(tileKey(position));
 }
 
@@ -34,7 +43,7 @@ export function isActionLegal(
 }
 
 export function getAvailableNeighbors(maze: Maze, position: Position): Position[] {
-  return getNeighbors(position).filter((neighbor) => !maze.walls.has(tileKey(neighbor)));
+  return getNeighbors(position).filter((neighbor) => !isWall(maze, neighbor));
 }
 
 export function listAllActions(): readonly Action[] {

@@ -1,11 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 
+import { AStarAgent } from "./controllers/AStarAgent";
+import { BehaviorTreeAgent } from "./controllers/BehaviorTreeAgent";
+import type { Controller } from "./controllers/Controller";
+import { createController } from "./controllers/createController";
+import { GreedyPelletAgent } from "./controllers/GreedyPelletAgent";
+import { GhostAvoidanceAgent } from "./controllers/GhostAvoidanceAgent";
 import { HumanController } from "./controllers/HumanController";
+import { RandomAgent } from "./controllers/RandomAgent";
+import { evaluateController } from "./evaluation/evaluateAgent";
+import type { EvaluationMetrics } from "./evaluation/metrics";
 import { Action } from "./game/actions";
 import { DEFAULT_SEED, GAME_TICK_MS } from "./game/constants";
 import { restartGame, stepGame } from "./game/engine";
 import { createGameState, getGameStateView } from "./game/gameState";
 import type { GameState, GameStatus } from "./game/types";
+import { TrajectoryLogger } from "./logging/trajectoryLogger";
 import { CanvasRenderer } from "./render/CanvasRenderer";
 import { AgentSelector, type AgentOption } from "./ui/AgentSelector";
 import { Hud } from "./ui/Hud";
@@ -25,6 +35,31 @@ const controllerOptions: AgentOption[] = [
     description:
       "Keyboard-driven play using the same action API the AI agents will use.",
   },
+  {
+    id: "random",
+    label: "Random Agent",
+    description: "Pure baseline agent that chooses a legal move at random.",
+  },
+  {
+    id: "greedy",
+    label: "Greedy Pellet Agent",
+    description: "Targets the nearest pellet using shortest-path search.",
+  },
+  {
+    id: "avoidance",
+    label: "Ghost Avoidance Agent",
+    description: "Prioritizes survival and safer routes around nearby ghosts.",
+  },
+  {
+    id: "astar",
+    label: "A* Agent",
+    description: "Uses weighted A* planning with ghost danger penalties.",
+  },
+  {
+    id: "behavior-tree",
+    label: "Behavior Tree Agent",
+    description: "Combines survival, chase, and planning behaviors hierarchically.",
+  },
 ];
 
 function App() {
@@ -37,9 +72,22 @@ function App() {
   const [showMenu, setShowMenu] = useState(true);
   const [hasBegun, setHasBegun] = useState(false);
   const [pauseOverlayOpen, setPauseOverlayOpen] = useState(false);
+  const [loggingEnabled, setLoggingEnabled] = useState(true);
+  const [logCount, setLogCount] = useState(0);
+  const [evaluationMetrics, setEvaluationMetrics] = useState<EvaluationMetrics | null>(null);
+  const [evaluationBusy, setEvaluationBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const stateRef = useRef(gameState);
+  const loggerRef = useRef(new TrajectoryLogger());
+  const controllersRef = useRef<Record<string, Controller>>({
+    human: humanController,
+    random: new RandomAgent(DEFAULT_SEED),
+    greedy: new GreedyPelletAgent(),
+    avoidance: new GhostAvoidanceAgent(),
+    astar: new AStarAgent(),
+    "behavior-tree": new BehaviorTreeAgent(),
+  });
 
   useEffect(() => {
     stateRef.current = gameState;
@@ -48,6 +96,16 @@ function App() {
   useEffect(() => {
     writeStorage(CONTROLLER_STORAGE_KEY, controllerId);
   }, [controllerId]);
+
+  useEffect(() => {
+    if (!controllerOptions.some((option) => option.id === controllerId)) {
+      setControllerId("human");
+    }
+  }, [controllerId]);
+
+  useEffect(() => {
+    loggerRef.current.setEnabled(loggingEnabled);
+  }, [loggingEnabled]);
 
   useEffect(() => {
     if (!canvasRef.current) {
@@ -76,19 +134,24 @@ function App() {
         return;
       }
 
+      const activeController = controllersRef.current[controllerId] ?? humanController;
+      const view = getGameStateView(stateRef.current);
+      const action = activeController.selectAction(view);
       const result = stepGame(
         stateRef.current,
-        humanController.selectAction(getGameStateView(stateRef.current)),
+        action,
       );
+      loggerRef.current.log(activeController.name, view, action, result);
 
       stateRef.current = result.state;
       setGameState(result.state);
+      setLogCount(loggerRef.current.getEntries().length);
     }, GAME_TICK_MS);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [pauseOverlayOpen, showMenu]);
+  }, [controllerId, pauseOverlayOpen, showMenu]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -151,6 +214,13 @@ function App() {
   const frightenedGhosts = gameState.ghosts.filter(
     (ghost) => ghost.frightenedTicks > 0,
   ).length;
+  const activeController = controllersRef.current[controllerId] ?? humanController;
+
+  function resetControllers(seed: number) {
+    Object.values(controllersRef.current).forEach((controller, index) => {
+      controller.reset?.(seed + index);
+    });
+  }
 
   function resumeGameFromInput() {
     const shouldResume =
@@ -172,7 +242,9 @@ function App() {
   }
 
   function handleStartOrRestart() {
-    humanController.reset(gameState.seed);
+    resetControllers(DEFAULT_SEED);
+    loggerRef.current.clear();
+    setLogCount(0);
     const nextState = createGameState({ seed: DEFAULT_SEED });
     stateRef.current = nextState;
     setGameState(nextState);
@@ -182,7 +254,9 @@ function App() {
   }
 
   function handleRestart() {
-    humanController.reset(gameState.seed);
+    resetControllers(DEFAULT_SEED);
+    loggerRef.current.clear();
+    setLogCount(0);
     const nextState = restartGame(stateRef.current, DEFAULT_SEED);
     stateRef.current = nextState;
     setGameState(nextState);
@@ -205,6 +279,36 @@ function App() {
     setHasBegun(true);
     setShowMenu(false);
     setPauseOverlayOpen(false);
+  }
+
+  function handleToggleLogging() {
+    setLoggingEnabled((currentValue) => !currentValue);
+  }
+
+  function handleExportLog() {
+    loggerRef.current.download();
+  }
+
+  function handleRunEvaluation() {
+    if (evaluationBusy) {
+      return;
+    }
+
+    setEvaluationBusy(true);
+
+    window.setTimeout(() => {
+      const evaluationController = createController(controllerId, DEFAULT_SEED);
+      const metrics = evaluateController(evaluationController, {
+        episodes: 5,
+        maxStepsPerEpisode: 700,
+        seed: DEFAULT_SEED,
+      });
+
+      startTransition(() => {
+        setEvaluationMetrics(metrics);
+        setEvaluationBusy(false);
+      });
+    }, 0);
   }
 
   function togglePause() {
@@ -234,7 +338,7 @@ function App() {
         ? "Pac-Man is out of lives. Restart to try again from the same seed."
         : pauseOverlayOpen
           ? "The simulation is paused."
-          : "Manual play is active. AI controller options land in the next milestone.";
+          : `${activeController.name} is active. Switch controllers anytime to compare styles.`;
 
   return (
     <main className="app-shell">
@@ -260,7 +364,7 @@ function App() {
           onChange={setControllerId}
         />
         <Hud
-          controllerName="Manual Play"
+          controllerName={activeController.name}
           score={gameState.score}
           lives={gameState.lives}
           pelletsRemaining={gameState.pellets.size + gameState.powerPellets.size}
@@ -272,6 +376,13 @@ function App() {
           frightenedGhosts={frightenedGhosts}
           lastReward={gameState.reward}
           statusNote={statusNote}
+          loggingEnabled={loggingEnabled}
+          logCount={logCount}
+          evaluationMetrics={evaluationMetrics}
+          evaluationBusy={evaluationBusy}
+          onToggleLogging={handleToggleLogging}
+          onExportLog={handleExportLog}
+          onRunEvaluation={handleRunEvaluation}
         />
       </section>
     </main>
