@@ -14,9 +14,8 @@ import {
 import { createGhosts, createPacman } from "./entities";
 import { cloneGameState, createGameState } from "./gameState";
 import {
-  getAvailableNeighbors,
+  getGhostLegalActions,
   getLegalActions,
-  isActionLegal,
   isWall,
   listAllActions,
 } from "./navigation";
@@ -38,6 +37,10 @@ function createStepEvents(): StepEvents {
 }
 
 function getGhostMoveIntervalMs(ghost: GhostEntity): number {
+  if (ghost.mode === "house") {
+    return GHOST_MOVE_INTERVAL_MS;
+  }
+
   return ghost.frightenedTimerMs > 0
     ? FRIGHTENED_GHOST_MOVE_INTERVAL_MS
     : GHOST_MOVE_INTERVAL_MS;
@@ -103,7 +106,9 @@ function applyPelletCollection(state: GameState, events: StepEvents): void {
     state.score += SCORE_VALUES.powerPellet;
     events.powerPelletEaten = true;
     state.ghosts.forEach((ghost) => {
-      ghost.frightenedTimerMs = POWER_PELLET_DURATION_MS;
+      if (ghost.mode === "active") {
+        ghost.frightenedTimerMs = POWER_PELLET_DURATION_MS;
+      }
     });
   }
 
@@ -115,7 +120,9 @@ function applyPelletCollection(state: GameState, events: StepEvents): void {
 }
 
 function resolveGhostCollisions(state: GameState, events: StepEvents): boolean {
-  const collidingGhosts = findCollidingGhosts(state.pacman.position, state.ghosts);
+  const collidingGhosts = findCollidingGhosts(state.pacman.position, state.ghosts).filter(
+    (ghost) => ghost.mode === "active",
+  );
 
   if (collidingGhosts.length === 0) {
     return false;
@@ -173,14 +180,12 @@ function chooseGhostAction(
   pacmanPosition: Position,
   rngState: number,
 ): { action: Action; rngState: number } {
-  const legalActions = getLegalActions(maze, ghost.position).filter(
-    (action) => action !== Action.Stop,
-  );
+  const ghostLegalActions = getGhostLegalActions(maze, ghost).filter((action) => action !== Action.Stop);
 
   const options =
-    legalActions.length > 1
-      ? legalActions.filter((action) => action !== getOppositeAction(ghost.direction))
-      : legalActions;
+    ghostLegalActions.length > 1
+      ? ghostLegalActions.filter((action) => action !== getOppositeAction(ghost.direction))
+      : ghostLegalActions;
   const candidates = options.length > 0 ? options : [Action.Stop];
 
   const scoredCandidates = candidates.map((action) => ({
@@ -203,6 +208,10 @@ function moveGhosts(state: GameState, events: StepEvents, elapsedMs: number): vo
   for (const ghost of state.ghosts) {
     if (state.status !== "running" || state.readyDelayMs > 0) {
       break;
+    }
+
+    if (ghost.mode === "house") {
+      continue;
     }
 
     ghost.moveProgressMs += elapsedMs;

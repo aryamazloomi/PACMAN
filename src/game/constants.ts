@@ -8,6 +8,9 @@ export const FRIGHTENED_GHOST_MOVE_INTERVAL_MS = 220;
 export const POWER_PELLET_DURATION_MS = 6500;
 export const START_DELAY_MS = 700;
 export const RESPAWN_DELAY_MS = 900;
+export const PINKY_RELEASE_DELAY_MS = 3000;
+export const INKY_RELEASE_DELAY_MS = 8000;
+export const CLYDE_RELEASE_DELAY_MS = 12000;
 
 export const SCORE_VALUES = {
   pellet: 10,

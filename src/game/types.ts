@@ -3,6 +3,7 @@ import type { Action } from "./actions";
 export type GameStatus = "ready" | "running" | "paused" | "won" | "lost";
 
 export type GhostId = "blinky" | "pinky" | "inky" | "clyde";
+export type GhostMode = "house" | "exiting" | "active";
 
 export interface Position {
   x: number;
@@ -14,9 +15,11 @@ export interface Maze {
   height: number;
   rows: readonly string[];
   walls: ReadonlySet<string>;
+  ghostHouseTiles: ReadonlySet<string>;
   initialPellets: ReadonlySet<string>;
   initialPowerPellets: ReadonlySet<string>;
   pacmanSpawn: Position;
+  ghostDoor: Position | null;
   ghostSpawns: readonly GhostSpawn[];
 }
 
@@ -25,6 +28,8 @@ export interface GhostSpawn {
   position: Position;
   color: string;
   scatterTarget: Position;
+  startingMode: GhostMode;
+  releaseDelayMs: number;
 }
 
 export interface PacmanEntity {
@@ -41,8 +46,10 @@ export interface GhostEntity {
   position: Position;
   spawn: Position;
   direction: Action;
+  mode: GhostMode;
   frightenedTimerMs: number;
   moveProgressMs: number;
+  releaseTimerMs: number;
   scatterTarget: Position;
 }
 
