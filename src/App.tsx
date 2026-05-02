@@ -286,8 +286,9 @@ function App() {
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
+      rendererRef.current = null;
     };
-  }, []);
+  }, [activePage]);
 
   useEffect(() => {
     const resumeGameForInput = () => {
