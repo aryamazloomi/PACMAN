@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { Action } from "../src/game/actions";
-import { PACMAN_MOVE_INTERVAL_MS, SIMULATION_STEP_MS, START_DELAY_MS } from "../src/game/constants";
+import {
+  CLYDE_RELEASE_DELAY_MS,
+  GHOST_MOVE_INTERVAL_MS,
+  INKY_RELEASE_DELAY_MS,
+  PACMAN_MOVE_INTERVAL_MS,
+  PINKY_RELEASE_DELAY_MS,
+  SIMULATION_STEP_MS,
+  START_DELAY_MS,
+} from "../src/game/constants";
 import { stepGame } from "../src/game/engine";
 import { createGameState, getGameStateView } from "../src/game/gameState";
 import { createMaze } from "../src/game/maze";
@@ -34,6 +42,20 @@ function advanceGame(
   }
 
   return result;
+}
+
+function createGhostReleaseTestState(): GameState {
+  const maze = createMaze([
+    "#########",
+    "#.......#",
+    "###.D.###",
+    "#.3H2H4.#",
+    "#########",
+    "#P......#",
+    "#########",
+  ]);
+
+  return createGameState({ maze, readyDelayMs: 0 });
 }
 
 describe("game core", () => {
@@ -181,6 +203,24 @@ describe("game core", () => {
     expect(result.state.lives).toBe(state.lives);
   });
 
+  it("ignores collisions with exiting ghosts", () => {
+    const state = createGameState({ readyDelayMs: 0 });
+    const pinky = state.ghosts.find((ghost) => ghost.id === "pinky");
+
+    if (!pinky) {
+      throw new Error("Expected Pinky to exist in the default maze.");
+    }
+
+    pinky.mode = "exiting";
+    pinky.releaseTimerMs = 0;
+    pinky.position = { ...state.pacman.position };
+
+    const result = stepGame(state, Action.Stop, SIMULATION_STEP_MS);
+
+    expect(result.events.lifeLost).toBe(false);
+    expect(result.state.lives).toBe(state.lives);
+  });
+
   it("eats frightened ghosts and resets them to spawn", () => {
     const state = createGameState({ readyDelayMs: 0 });
     state.ghosts[0].position = { ...state.pacman.position };
@@ -192,6 +232,66 @@ describe("game core", () => {
     expect(result.state.lives).toBe(state.lives);
     expect(result.state.score).toBe(200);
     expect(result.state.ghosts[0].position).toEqual(result.state.ghosts[0].spawn);
+  });
+
+  it("releases Pinky, Inky, and Clyde gradually", () => {
+    const beforePinky = advanceGame(
+      createGhostReleaseTestState(),
+      Action.Stop,
+      PINKY_RELEASE_DELAY_MS - SIMULATION_STEP_MS,
+    );
+    const afterPinky = advanceGame(
+      createGhostReleaseTestState(),
+      Action.Stop,
+      PINKY_RELEASE_DELAY_MS + GHOST_MOVE_INTERVAL_MS * 2,
+    );
+    const afterInky = advanceGame(
+      createGhostReleaseTestState(),
+      Action.Stop,
+      INKY_RELEASE_DELAY_MS + GHOST_MOVE_INTERVAL_MS * 4,
+    );
+    const afterClyde = advanceGame(
+      createGhostReleaseTestState(),
+      Action.Stop,
+      CLYDE_RELEASE_DELAY_MS + GHOST_MOVE_INTERVAL_MS * 4,
+    );
+
+    expect(beforePinky.state.ghosts.every((ghost) => ghost.mode === "house")).toBe(true);
+    expect(afterPinky.state.ghosts.find((ghost) => ghost.id === "pinky")?.mode).not.toBe("house");
+    expect(afterPinky.state.ghosts.find((ghost) => ghost.id === "inky")?.mode).toBe("house");
+    expect(afterPinky.state.ghosts.find((ghost) => ghost.id === "clyde")?.mode).toBe("house");
+    expect(afterInky.state.ghosts.find((ghost) => ghost.id === "inky")?.mode).not.toBe("house");
+    expect(afterInky.state.ghosts.find((ghost) => ghost.id === "clyde")?.mode).toBe("house");
+    expect(afterClyde.state.ghosts.find((ghost) => ghost.id === "clyde")?.mode).not.toBe("house");
+  });
+
+  it("resets ghost start modes and release timers after a life is lost", () => {
+    const state = createGameState({ readyDelayMs: 0 });
+    const pinky = state.ghosts.find((ghost) => ghost.id === "pinky");
+    const blinky = state.ghosts.find((ghost) => ghost.id === "blinky");
+
+    if (!pinky || !blinky) {
+      throw new Error("Expected Blinky and Pinky to exist in the default maze.");
+    }
+
+    pinky.mode = "active";
+    pinky.releaseTimerMs = 0;
+    pinky.position = { ...state.pacman.position };
+
+    const result = stepGame(state, Action.Stop, SIMULATION_STEP_MS);
+    const resetBlinky = result.state.ghosts.find((ghost) => ghost.id === "blinky");
+    const resetPinky = result.state.ghosts.find((ghost) => ghost.id === "pinky");
+    const resetInky = result.state.ghosts.find((ghost) => ghost.id === "inky");
+    const resetClyde = result.state.ghosts.find((ghost) => ghost.id === "clyde");
+
+    expect(result.events.lifeLost).toBe(true);
+    expect(result.state.status).toBe("ready");
+    expect(result.state.pacman.position).toEqual(result.state.pacman.spawn);
+    expect(resetBlinky?.mode).toBe("active");
+    expect(resetPinky?.mode).toBe("house");
+    expect(resetInky?.mode).toBe("house");
+    expect(resetClyde?.mode).toBe("house");
+    expect(resetPinky?.releaseTimerMs).toBeGreaterThan(0);
   });
 
   it("wins the level when the final pellet is collected", () => {

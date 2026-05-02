@@ -14,8 +14,11 @@ import {
 import { createGhosts, createPacman } from "./entities";
 import { cloneGameState, createGameState } from "./gameState";
 import {
+  getAvailableNeighbors,
   getGhostLegalActions,
   getLegalActions,
+  isGhostDoor,
+  isGhostHouseTile,
   isWall,
   listAllActions,
 } from "./navigation";
@@ -65,6 +68,97 @@ function tickGhostTimers(state: GameState, elapsedMs: number): void {
   state.ghosts.forEach((ghost) => {
     ghost.frightenedTimerMs = Math.max(0, ghost.frightenedTimerMs - elapsedMs);
   });
+}
+
+function tickGhostReleaseTimers(state: GameState, elapsedMs: number): void {
+  state.ghosts.forEach((ghost) => {
+    if (ghost.mode !== "house" || ghost.releaseTimerMs <= 0) {
+      return;
+    }
+
+    ghost.releaseTimerMs = Math.max(0, ghost.releaseTimerMs - elapsedMs);
+
+    if (ghost.releaseTimerMs === 0) {
+      ghost.mode = "exiting";
+      ghost.direction = Action.Stop;
+      ghost.moveProgressMs = 0;
+    }
+  });
+}
+
+function getGhostSpawnConfig(maze: Maze, ghostId: GhostEntity["id"]) {
+  return maze.ghostSpawns.find((spawn) => spawn.id === ghostId);
+}
+
+function resetGhostToSpawn(maze: Maze, ghost: GhostEntity): void {
+  const spawnConfig = getGhostSpawnConfig(maze, ghost.id);
+
+  ghost.position = { ...ghost.spawn };
+  ghost.direction = Action.Stop;
+  ghost.frightenedTimerMs = 0;
+  ghost.moveProgressMs = 0;
+  ghost.mode = spawnConfig?.startingMode ?? ghost.mode;
+  ghost.releaseTimerMs = spawnConfig?.releaseDelayMs ?? ghost.releaseTimerMs;
+}
+
+function getGhostExitTarget(maze: Maze, ghost: GhostEntity): Position | null {
+  if (!maze.ghostDoor) {
+    return null;
+  }
+
+  if (isGhostHouseTile(maze, ghost.position)) {
+    return maze.ghostDoor;
+  }
+
+  if (isGhostDoor(maze, ghost.position)) {
+    const outsideTiles = getAvailableNeighbors(maze, ghost.position).filter(
+      (position) => !isGhostDoor(maze, position) && !isGhostHouseTile(maze, position),
+    );
+
+    if (outsideTiles.length === 0) {
+      return null;
+    }
+
+    return outsideTiles.reduce((bestTile, candidate) =>
+      candidate.y < bestTile.y ? candidate : bestTile,
+    );
+  }
+
+  return null;
+}
+
+function chooseActionTowardTarget(
+  maze: Maze,
+  ghost: GhostEntity,
+  target: Position,
+  rngState: number,
+): { action: Action; rngState: number } {
+  const ghostLegalActions = getGhostLegalActions(maze, ghost).filter(
+    (action) => action !== Action.Stop,
+  );
+
+  if (ghostLegalActions.length === 0) {
+    return {
+      action: Action.Stop,
+      rngState,
+    };
+  }
+
+  const options =
+    ghostLegalActions.length > 1
+      ? ghostLegalActions.filter((action) => action !== getOppositeAction(ghost.direction))
+      : ghostLegalActions;
+  const candidates = options.length > 0 ? options : ghostLegalActions;
+
+  const bestDistance = Math.min(
+    ...candidates.map((action) => manhattanDistance(movePosition(ghost.position, action), target)),
+  );
+
+  const bestActions = candidates.filter(
+    (action) => manhattanDistance(movePosition(ghost.position, action), target) === bestDistance,
+  );
+
+  return chooseBySeed(bestActions, rngState);
 }
 
 function resolvePacmanDirection(
@@ -134,10 +228,7 @@ function resolveGhostCollisions(state: GameState, events: StepEvents): boolean {
     if (ghost.frightenedTimerMs > 0) {
       events.ghostsEaten.push(ghost.id);
       state.score += SCORE_VALUES.ghost;
-      ghost.position = { ...ghost.spawn };
-      ghost.direction = Action.Stop;
-      ghost.frightenedTimerMs = 0;
-      ghost.moveProgressMs = 0;
+      resetGhostToSpawn(state.maze, ghost);
       return;
     }
 
@@ -180,6 +271,14 @@ function chooseGhostAction(
   pacmanPosition: Position,
   rngState: number,
 ): { action: Action; rngState: number } {
+  if (ghost.mode === "exiting") {
+    const exitTarget = getGhostExitTarget(maze, ghost);
+
+    if (exitTarget) {
+      return chooseActionTowardTarget(maze, ghost, exitTarget, rngState);
+    }
+  }
+
   const ghostLegalActions = getGhostLegalActions(maze, ghost).filter((action) => action !== Action.Stop);
 
   const options =
@@ -228,6 +327,14 @@ function moveGhosts(state: GameState, events: StepEvents, elapsedMs: number): vo
 
     if (choice.action !== Action.Stop) {
       ghost.position = movePosition(ghost.position, choice.action);
+    }
+
+    if (
+      ghost.mode === "exiting" &&
+      !isGhostDoor(state.maze, ghost.position) &&
+      !isGhostHouseTile(state.maze, ghost.position)
+    ) {
+      ghost.mode = "active";
     }
 
     if (resolveGhostCollisions(state, events)) {
@@ -295,6 +402,7 @@ export function stepGame(
 
   if (activeElapsedMs > 0 && state.readyDelayMs === 0 && state.status === "running") {
     tickGhostTimers(state, activeElapsedMs);
+    tickGhostReleaseTimers(state, activeElapsedMs);
     movePacman(state, events, activeElapsedMs);
   }
 
