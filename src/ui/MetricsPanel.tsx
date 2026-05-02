@@ -6,12 +6,9 @@ interface MetricsPanelProps {
   stepCount: number;
   seed: number;
   statusNote: string;
-  loggingEnabled: boolean;
   logCount: number;
   evaluationMetrics: EvaluationMetrics | null;
   evaluationBusy: boolean;
-  onToggleLogging: () => void;
-  onExportLog: () => void;
   onRunEvaluation: () => void;
 }
 
@@ -21,20 +18,17 @@ export function MetricsPanel({
   stepCount,
   seed,
   statusNote,
-  loggingEnabled,
   logCount,
   evaluationMetrics,
   evaluationBusy,
-  onToggleLogging,
-  onExportLog,
   onRunEvaluation,
 }: MetricsPanelProps) {
   return (
     <section className="panel analytics-panel" id="runtime-analytics">
       <div className="panel-header">
         <div>
-          <p className="panel-kicker">Runtime</p>
-          <h2>Metric analytics</h2>
+          <p className="panel-kicker">Metric Analytics</p>
+          <h2>Evaluation and telemetry</h2>
         </div>
       </div>
       <div className="runtime-list">
@@ -46,12 +40,6 @@ export function MetricsPanel({
       </div>
       <p className="panel-copy status-copy">{statusNote}</p>
       <div className="hero-actions compact-actions">
-        <button className="secondary-button" onClick={onToggleLogging}>
-          {loggingEnabled ? "Pause Logging" : "Resume Logging"}
-        </button>
-        <button className="secondary-button" onClick={onExportLog}>
-          Export Log
-        </button>
         <button
           className="primary-button"
           onClick={onRunEvaluation}

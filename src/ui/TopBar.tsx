@@ -3,17 +3,17 @@ import type { GameStatus } from "../game/types";
 interface TopBarProps {
   query: string;
   onQueryChange: (value: string) => void;
+  pageLabel: string;
   selectedControllerLabel: string;
   status: GameStatus;
-  matchCount: number;
 }
 
 export function TopBar({
   query,
   onQueryChange,
+  pageLabel,
   selectedControllerLabel,
   status,
-  matchCount,
 }: TopBarProps) {
   return (
     <header className="topbar">
@@ -30,7 +30,7 @@ export function TopBar({
         />
       </label>
       <div className="topbar-meta">
-        <span className="topbar-chip">{matchCount} DOSSIERS</span>
+        <span className="topbar-chip">{pageLabel}</span>
         <span className="topbar-chip">STATE {status}</span>
         <span className="topbar-chip topbar-chip-accent">{selectedControllerLabel}</span>
       </div>

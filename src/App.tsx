@@ -12,23 +12,27 @@ import { evaluateController } from "./evaluation/evaluateAgent";
 import type { EvaluationMetrics } from "./evaluation/metrics";
 import { Action } from "./game/actions";
 import { DEFAULT_SEED, MAX_FRAME_DELTA_MS, SIMULATION_STEP_MS } from "./game/constants";
+import { DEFAULT_DIFFICULTY, getDifficultyOption } from "./game/difficulty";
 import { restartGame, stepGame } from "./game/engine";
 import { createGameState, getGameStateView } from "./game/gameState";
-import type { GameState, GameStatus } from "./game/types";
+import type { DifficultyId, GameState, GameStatus } from "./game/types";
 import { TrajectoryLogger } from "./logging/trajectoryLogger";
 import { CanvasRenderer } from "./render/CanvasRenderer";
 import { AgentSelector, type AgentOption } from "./ui/AgentSelector";
 import { AgentBriefing } from "./ui/AgentBriefing";
 import { AgentLibrary } from "./ui/AgentLibrary";
-import { ArchiveSidebar } from "./ui/ArchiveSidebar";
+import { ArchiveSidebar, type DashboardPage } from "./ui/ArchiveSidebar";
 import { Hud } from "./ui/Hud";
-import { MainMenu } from "./ui/MainMenu";
 import { MetricsPanel } from "./ui/MetricsPanel";
 import { PauseMenu } from "./ui/PauseMenu";
+import { RuntimePanel } from "./ui/RuntimePanel";
+import { SimulationLogsPanel } from "./ui/SimulationLogsPanel";
+import { SystemConfigPanel } from "./ui/SystemConfigPanel";
 import { TopBar } from "./ui/TopBar";
 import { readStorage, writeStorage } from "./utils/storage";
 
 const CONTROLLER_STORAGE_KEY = "pacman-ai-controller";
+const DIFFICULTY_STORAGE_KEY = "pacman-ai-difficulty";
 
 const humanController = new HumanController();
 
@@ -135,13 +139,26 @@ function App() {
   const [controllerId, setControllerId] = useState<string>(() =>
     readStorage(CONTROLLER_STORAGE_KEY, "human"),
   );
-  const [gameState, setGameState] = useState<GameState>(() =>
-    createGameState({ seed: DEFAULT_SEED }),
+  const [difficultyId, setDifficultyId] = useState<DifficultyId>(() =>
+    readStorage(DIFFICULTY_STORAGE_KEY, DEFAULT_DIFFICULTY),
   );
+  const [gameState, setGameState] = useState<GameState>(() =>
+    createGameState({
+      seed: DEFAULT_SEED,
+      difficulty: readStorage(DIFFICULTY_STORAGE_KEY, DEFAULT_DIFFICULTY),
+    }),
+  );
+  const [activePage, setActivePage] = useState<DashboardPage>("dashboard");
   const [showMenu, setShowMenu] = useState(true);
   const [hasBegun, setHasBegun] = useState(false);
   const [pauseOverlayOpen, setPauseOverlayOpen] = useState(false);
   const [agentQuery, setAgentQuery] = useState("");
+  const [draftControllerId, setDraftControllerId] = useState<string>(() =>
+    readStorage(CONTROLLER_STORAGE_KEY, "human"),
+  );
+  const [draftDifficultyId, setDraftDifficultyId] = useState<DifficultyId>(() =>
+    readStorage(DIFFICULTY_STORAGE_KEY, DEFAULT_DIFFICULTY),
+  );
   const [loggingEnabled, setLoggingEnabled] = useState(true);
   const [logCount, setLogCount] = useState(0);
   const [evaluationMetrics, setEvaluationMetrics] = useState<EvaluationMetrics | null>(null);
@@ -172,6 +189,14 @@ function App() {
   }, [controllerId]);
 
   useEffect(() => {
+    setDraftControllerId(controllerId);
+  }, [controllerId]);
+
+  useEffect(() => {
+    setDraftDifficultyId(difficultyId);
+  }, [difficultyId]);
+
+  useEffect(() => {
     showMenuRef.current = showMenu;
   }, [showMenu]);
 
@@ -182,6 +207,10 @@ function App() {
   useEffect(() => {
     writeStorage(CONTROLLER_STORAGE_KEY, controllerId);
   }, [controllerId]);
+
+  useEffect(() => {
+    writeStorage(DIFFICULTY_STORAGE_KEY, difficultyId);
+  }, [difficultyId]);
 
   useEffect(() => {
     if (!controllerOptions.some((option) => option.id === controllerId)) {
@@ -375,6 +404,7 @@ function App() {
   const activeController = controllersRef.current[controllerId] ?? humanController;
   const selectedControllerOption =
     controllerOptions.find((option) => option.id === controllerId) ?? controllerOptions[0];
+  const activeDifficultyOption = getDifficultyOption(difficultyId);
   const filteredControllerOptions = controllerOptions.filter((option) => {
     if (!deferredAgentQuery) {
       return true;
@@ -395,6 +425,8 @@ function App() {
     return searchableText.includes(deferredAgentQuery);
   });
   const totalPellets = gameState.maze.initialPellets.size + gameState.maze.initialPowerPellets.size;
+  const hasPendingConfigChanges =
+    draftControllerId !== controllerId || draftDifficultyId !== difficultyId;
 
   function resetControllers(seed: number) {
     Object.values(controllersRef.current).forEach((controller, index) => {
@@ -425,7 +457,10 @@ function App() {
     resetControllers(DEFAULT_SEED);
     loggerRef.current.clear();
     setLogCount(0);
-    const nextState = createGameState({ seed: DEFAULT_SEED });
+    const nextState = createGameState({
+      seed: DEFAULT_SEED,
+      difficulty: difficultyId,
+    });
     stateRef.current = nextState;
     setGameState(nextState);
     setHasBegun(true);
@@ -482,6 +517,7 @@ function App() {
         episodes: 5,
         maxStepsPerEpisode: 3600,
         seed: DEFAULT_SEED,
+        difficulty: difficultyId,
       });
 
       startTransition(() => {
@@ -511,6 +547,23 @@ function App() {
     setPauseOverlayOpen((currentValue) => !currentValue);
   }
 
+  function handleApplySystemConfig() {
+    resetControllers(DEFAULT_SEED);
+    loggerRef.current.clear();
+    setLogCount(0);
+    setControllerId(draftControllerId);
+    setDifficultyId(draftDifficultyId);
+    const nextState = createGameState({
+      seed: DEFAULT_SEED,
+      difficulty: draftDifficultyId,
+    });
+    stateRef.current = nextState;
+    setGameState(nextState);
+    setHasBegun(true);
+    setShowMenu(false);
+    setPauseOverlayOpen(false);
+  }
+
   const statusNote =
     gameState.status === "won"
       ? "All pellets cleared. Restart or switch controllers to compare routes."
@@ -522,49 +575,111 @@ function App() {
           ? "The simulation is paused."
           : `${activeController.name} is active. Switch controllers anytime to compare styles.`;
 
+  const primaryActionLabel =
+    !hasBegun
+      ? "Initialize Simulation"
+      : showMenu && gameState.status !== "won" && gameState.status !== "lost"
+        ? "Resume Simulation"
+        : "Restart Simulation";
+  const activePageLabel =
+    activePage === "dashboard"
+      ? "CORE DASHBOARD"
+      : activePage === "neural"
+        ? "NEURAL ARCHITECTURE"
+        : activePage === "metrics"
+          ? "METRIC ANALYTICS"
+          : activePage === "logs"
+            ? "SIMULATION LOGS"
+            : "SYSTEM CONFIG";
+
+  function handlePrimarySidebarAction() {
+    if (!hasBegun) {
+      handleStartOrRestart();
+      return;
+    }
+
+    if (showMenu && gameState.status !== "won" && gameState.status !== "lost") {
+      handleResume();
+      return;
+    }
+
+    handleRestart();
+  }
+
   return (
     <main className="dashboard-shell">
       <ArchiveSidebar
         activeControllerName={activeController.name}
-        hasBegun={hasBegun}
-        onPrimaryAction={handleStartOrRestart}
+        activePage={activePage}
+        primaryActionLabel={primaryActionLabel}
+        onPageChange={setActivePage}
+        onPrimaryAction={handlePrimarySidebarAction}
       />
       <section className="workspace-shell">
         <TopBar
           query={agentQuery}
           onQueryChange={setAgentQuery}
+          pageLabel={activePageLabel}
           selectedControllerLabel={selectedControllerOption.label}
           status={gameState.status}
-          matchCount={filteredControllerOptions.length}
         />
-        <div className="workspace-grid">
-          <section className="core-column">
-            <MainMenu
-              hasBegun={hasBegun}
-              onStart={handleStartOrRestart}
-              onResume={handleResume}
-            />
-            <div className="board-panel" id="core-dashboard">
-              <div className="board-frame-header">
-                <span className="live-indicator">LIVE_SIM_STREAM</span>
-                <span className="board-frame-status">{activeController.name}</span>
+        {activePage === "dashboard" ? (
+          <div className="workspace-grid">
+            <section className="core-column">
+              <div className="board-panel" id="core-dashboard">
+                <div className="board-frame-header">
+                  <span className="live-indicator">LIVE_SIM_STREAM</span>
+                  <span className="board-frame-status">{activeController.name}</span>
+                </div>
+                <canvas ref={canvasRef} className="game-canvas" />
+                <div className="board-frame-footer">CAM_04_NORTH_QUADRANT</div>
+                <PauseMenu
+                  open={pauseOverlayOpen}
+                  onResume={togglePause}
+                  onRestart={handleRestart}
+                />
               </div>
-              <canvas ref={canvasRef} className="game-canvas" />
-              <div className="board-frame-footer">CAM_04_NORTH_QUADRANT</div>
-              <PauseMenu
-                open={pauseOverlayOpen}
-                onResume={togglePause}
-                onRestart={handleRestart}
+              <AgentBriefing
+                option={selectedControllerOption}
+                showAudiencePanels={false}
               />
-            </div>
+            </section>
+            <section className="intel-column">
+              <Hud
+                controllerName={activeController.name}
+                score={gameState.score}
+                lives={gameState.lives}
+                pelletsRemaining={gameState.pellets.size + gameState.powerPellets.size}
+                totalPellets={totalPellets}
+                stepCount={gameState.steps}
+                status={gameState.status}
+                seed={gameState.seed}
+              />
+              <RuntimePanel
+                stepCount={gameState.steps}
+                lastReward={gameState.reward}
+                frightenedGhosts={frightenedGhosts}
+                statusNote={statusNote}
+              />
+              <AgentSelector
+                option={selectedControllerOption}
+                difficultyLabel={activeDifficultyOption.label}
+              />
+            </section>
+          </div>
+        ) : null}
+        {activePage === "neural" ? (
+          <div className="page-stack">
             <AgentBriefing option={selectedControllerOption} />
             <AgentLibrary
               options={filteredControllerOptions}
               selectedId={controllerId}
               query={agentQuery.trim()}
             />
-          </section>
-          <section className="intel-column">
+          </div>
+        ) : null}
+        {activePage === "metrics" ? (
+          <div className="page-grid">
             <Hud
               controllerName={activeController.name}
               score={gameState.score}
@@ -581,21 +696,40 @@ function App() {
               stepCount={gameState.steps}
               seed={gameState.seed}
               statusNote={statusNote}
-              loggingEnabled={loggingEnabled}
               logCount={logCount}
               evaluationMetrics={evaluationMetrics}
               evaluationBusy={evaluationBusy}
-              onToggleLogging={handleToggleLogging}
-              onExportLog={handleExportLog}
               onRunEvaluation={handleRunEvaluation}
             />
-            <AgentSelector
-              options={controllerOptions}
-              value={controllerId}
-              onChange={setControllerId}
+          </div>
+        ) : null}
+        {activePage === "logs" ? (
+          <div className="page-grid">
+            <SimulationLogsPanel
+              loggingEnabled={loggingEnabled}
+              logCount={logCount}
+              onToggleLogging={handleToggleLogging}
+              onExportLog={handleExportLog}
             />
-          </section>
-        </div>
+            <AgentSelector
+              option={selectedControllerOption}
+              difficultyLabel={activeDifficultyOption.label}
+            />
+          </div>
+        ) : null}
+        {activePage === "config" ? (
+          <div className="page-stack">
+            <SystemConfigPanel
+              options={controllerOptions}
+              controllerId={draftControllerId}
+              difficulty={draftDifficultyId}
+              onControllerChange={setDraftControllerId}
+              onDifficultyChange={setDraftDifficultyId}
+              onApply={handleApplySystemConfig}
+              hasPendingChanges={hasPendingConfigChanges}
+            />
+          </div>
+        ) : null}
       </section>
     </main>
   );

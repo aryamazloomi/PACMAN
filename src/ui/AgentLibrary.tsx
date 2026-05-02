@@ -15,15 +15,15 @@ export function AgentLibrary({
     <section className="panel library-panel" id="agent-library">
       <div className="panel-header">
         <div>
-          <p className="panel-kicker">Model Notes</p>
-          <h2>Controller learning archive</h2>
+          <p className="panel-kicker">Neural Architecture</p>
+          <h2>Controller architecture archive</h2>
         </div>
-        <span className="library-count">{options.length} dossiers</span>
+        <span className="library-count">{options.length} models</span>
       </div>
       <p className="panel-copy">
         {query
-          ? `Filtered by "${query}". Each dossier explains the controller in plain language for students and in practical terms for working engineers.`
-          : "Each dossier explains the controller in plain language for students and in practical terms for working engineers."}
+          ? `Filtered by "${query}". Educational and industry notes live here so the core dashboard can stay focused on the live simulation.`
+          : "Educational and industry notes live here so the core dashboard can stay focused on the live simulation."}
       </p>
       {options.length === 0 ? (
         <div className="empty-library">

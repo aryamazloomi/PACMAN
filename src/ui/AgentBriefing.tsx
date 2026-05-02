@@ -2,15 +2,19 @@ import type { AgentOption } from "./AgentSelector";
 
 interface AgentBriefingProps {
   option: AgentOption;
+  showAudiencePanels?: boolean;
 }
 
-export function AgentBriefing({ option }: AgentBriefingProps) {
+export function AgentBriefing({
+  option,
+  showAudiencePanels = true,
+}: AgentBriefingProps) {
   return (
     <section className="panel insight-panel" id="active-briefing">
       <div className="panel-header">
         <div>
           <p className="panel-kicker">{option.category}</p>
-          <h2>Current controller: {option.label}</h2>
+          <h2>Current model: {option.label}</h2>
         </div>
         <div className="insight-icon" aria-hidden="true">
           AI
@@ -21,16 +25,18 @@ export function AgentBriefing({ option }: AgentBriefingProps) {
         <span>How it works</span>
         {option.howItWorks}
       </p>
-      <div className="insight-grid">
-        <article className="insight-card">
-          <h3>For students</h3>
-          <p>{option.studentLens}</p>
-        </article>
-        <article className="insight-card">
-          <h3>For industry</h3>
-          <p>{option.industryLens}</p>
-        </article>
-      </div>
+      {showAudiencePanels ? (
+        <div className="insight-grid">
+          <article className="insight-card">
+            <h3>For students</h3>
+            <p>{option.studentLens}</p>
+          </article>
+          <article className="insight-card">
+            <h3>For industry</h3>
+            <p>{option.industryLens}</p>
+          </article>
+        </div>
+      ) : null}
       <div className="meta-chip-row">
         <span className="meta-chip">{option.planningStyle}</span>
         <span className="meta-chip">{option.complexity}</span>

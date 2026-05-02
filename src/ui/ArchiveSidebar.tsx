@@ -1,20 +1,31 @@
+export type DashboardPage =
+  | "dashboard"
+  | "neural"
+  | "metrics"
+  | "logs"
+  | "config";
+
 interface ArchiveSidebarProps {
   activeControllerName: string;
-  hasBegun: boolean;
+  activePage: DashboardPage;
+  primaryActionLabel: string;
+  onPageChange: (page: DashboardPage) => void;
   onPrimaryAction: () => void;
 }
 
-const navItems = [
-  { href: "#core-dashboard", label: "Core Dashboard" },
-  { href: "#active-briefing", label: "Neural Architecture" },
-  { href: "#runtime-analytics", label: "Metric Analytics" },
-  { href: "#agent-library", label: "Model Dossiers" },
-  { href: "#controller-panel", label: "System Config" },
+const navItems: Array<{ page: DashboardPage; label: string }> = [
+  { page: "dashboard", label: "Core Dashboard" },
+  { page: "neural", label: "Neural Architecture" },
+  { page: "metrics", label: "Metric Analytics" },
+  { page: "logs", label: "Simulation Logs" },
+  { page: "config", label: "System Config" },
 ];
 
 export function ArchiveSidebar({
   activeControllerName,
-  hasBegun,
+  activePage,
+  primaryActionLabel,
+  onPageChange,
   onPrimaryAction,
 }: ArchiveSidebarProps) {
   return (
@@ -30,25 +41,28 @@ export function ArchiveSidebar({
             <p>Active controller: {activeControllerName}</p>
           </div>
         </div>
-        <nav className="sidebar-nav" aria-label="Dashboard sections">
-          {navItems.map((item, index) => (
-            <a
-              key={item.href}
-              className={index === 0 ? "nav-link nav-link-active" : "nav-link"}
-              href={item.href}
+        <nav className="sidebar-nav" aria-label="Dashboard pages">
+          {navItems.map((item) => (
+            <button
+              key={item.page}
+              type="button"
+              className={
+                item.page === activePage ? "nav-link nav-link-active" : "nav-link"
+              }
+              onClick={() => onPageChange(item.page)}
             >
               {item.label}
-            </a>
+            </button>
           ))}
         </nav>
       </div>
       <div className="sidebar-footer">
         <button className="sidebar-primary-button" onClick={onPrimaryAction}>
-          {hasBegun ? "Restart Simulation" : "Initialize Simulation"}
+          {primaryActionLabel}
         </button>
         <p className="sidebar-help">
-          Use the archive search to compare controller behavior, theory, and
-          practical tradeoffs.
+          Core gameplay stays on the dashboard. Deeper architecture, metrics,
+          logs, and config now live on their own pages.
         </p>
         <div className="sync-pill">ARCHIVE_SYNC_ACTIVE</div>
       </div>
