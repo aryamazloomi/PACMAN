@@ -1,0 +1,69 @@
+:root {
+  color-scheme: dark;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(47, 122, 255, 0.28), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(255, 191, 0, 0.14), transparent 35%),
+    #050914;
+  color: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.shell {
+  width: min(960px, calc(100vw - 2rem));
+  margin: 0 auto;
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  gap: 1.5rem;
+  padding: 2rem 0 3rem;
+}
+
+.hero,
+.status-card {
+  background: rgba(8, 15, 31, 0.86);
+  border: 1px solid rgba(140, 182, 255, 0.18);
+  border-radius: 24px;
+  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.35);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+}
+
+.hero h1,
+.status-card h2 {
+  margin: 0 0 1rem;
+}
+
+.intro,
+.status-card p {
+  margin: 0;
+  line-height: 1.6;
+  color: #dbe6f5;
+}
