@@ -1,15 +1,17 @@
 import { Action } from "./actions";
 import { DEFAULT_SEED, INITIAL_LIVES, START_DELAY_MS } from "./constants";
+import { DEFAULT_DIFFICULTY, getSimulationConfig } from "./difficulty";
 import { createGhosts, createPacman } from "./entities";
 import { createMaze } from "./maze";
 import { getLegalActions } from "./navigation";
-import type { GameState, GameStateView, Maze } from "./types";
+import type { DifficultyId, GameState, GameStateView, Maze } from "./types";
 
 export interface CreateGameStateOptions {
   maze?: Maze;
   lives?: number;
   seed?: number;
   readyDelayMs?: number;
+  difficulty?: DifficultyId;
 }
 
 export function createGameState(
@@ -18,11 +20,14 @@ export function createGameState(
   const maze = options.maze ?? createMaze();
   const seed = options.seed ?? DEFAULT_SEED;
   const readyDelayMs = options.readyDelayMs ?? START_DELAY_MS;
+  const difficulty = options.difficulty ?? DEFAULT_DIFFICULTY;
+  const simulationConfig = getSimulationConfig(difficulty);
 
   return {
     maze,
+    simulationConfig,
     pacman: createPacman(maze),
-    ghosts: createGhosts(maze),
+    ghosts: createGhosts(maze, simulationConfig),
     pellets: new Set(maze.initialPellets),
     powerPellets: new Set(maze.initialPowerPellets),
     score: 0,
@@ -30,6 +35,7 @@ export function createGameState(
     lives: options.lives ?? INITIAL_LIVES,
     steps: 0,
     seed,
+    difficulty,
     rngState: seed >>> 0,
     status: readyDelayMs > 0 ? "ready" : "running",
     lastAction: Action.Stop,
@@ -71,6 +77,7 @@ export function cloneGameState(state: GameState): GameState {
 export function getGameStateView(state: GameState): GameStateView {
   return {
     maze: state.maze,
+    difficulty: state.difficulty,
     pacman: state.pacman,
     ghosts: state.ghosts,
     pellets: state.pellets,

@@ -84,6 +84,25 @@ describe("game core", () => {
     expect(clyde?.mode).toBe("house");
   });
 
+  it("scales ghost pressure across the three difficulty levels", () => {
+    const easyState = createGameState({ difficulty: "easy" });
+    const standardState = createGameState({ difficulty: "standard" });
+    const hardState = createGameState({ difficulty: "hard" });
+    const easyPinky = easyState.ghosts.find((ghost) => ghost.id === "pinky");
+    const hardPinky = hardState.ghosts.find((ghost) => ghost.id === "pinky");
+
+    expect(easyState.simulationConfig.ghostMoveIntervalMs).toBeGreaterThan(
+      standardState.simulationConfig.ghostMoveIntervalMs,
+    );
+    expect(standardState.simulationConfig.ghostMoveIntervalMs).toBeGreaterThan(
+      hardState.simulationConfig.ghostMoveIntervalMs,
+    );
+    expect(easyState.simulationConfig.powerPelletDurationMs).toBeGreaterThan(
+      hardState.simulationConfig.powerPelletDurationMs,
+    );
+    expect(easyPinky?.releaseTimerMs).toBeGreaterThan(hardPinky?.releaseTimerMs ?? 0);
+  });
+
   it("does not place pellets on Pac-Man spawn, the ghost door, or house spawns", () => {
     const state = createGameState();
     const occupiedKeys = new Set<string>([

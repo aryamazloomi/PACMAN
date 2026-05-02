@@ -1,16 +1,14 @@
 import { Action, getOppositeAction } from "./actions";
 import { findCollidingGhosts } from "./collisions";
 import {
-  FRIGHTENED_GHOST_MOVE_INTERVAL_MS,
-  GHOST_MOVE_INTERVAL_MS,
   INITIAL_LIVES,
   PACMAN_MOVE_INTERVAL_MS,
-  POWER_PELLET_DURATION_MS,
   RESPAWN_DELAY_MS,
   SCORE_VALUES,
   SIMULATION_STEP_MS,
   START_DELAY_MS,
 } from "./constants";
+import { scaleGhostReleaseDelayMs } from "./difficulty";
 import { createGhosts, createPacman } from "./entities";
 import { cloneGameState, createGameState } from "./gameState";
 import {
@@ -39,19 +37,19 @@ function createStepEvents(): StepEvents {
   };
 }
 
-function getGhostMoveIntervalMs(ghost: GhostEntity): number {
+function getGhostMoveIntervalMs(state: GameState, ghost: GhostEntity): number {
   if (ghost.mode === "house") {
-    return GHOST_MOVE_INTERVAL_MS;
+    return state.simulationConfig.ghostMoveIntervalMs;
   }
 
   return ghost.frightenedTimerMs > 0
-    ? FRIGHTENED_GHOST_MOVE_INTERVAL_MS
-    : GHOST_MOVE_INTERVAL_MS;
+    ? state.simulationConfig.frightenedGhostMoveIntervalMs
+    : state.simulationConfig.ghostMoveIntervalMs;
 }
 
 function resetCharacters(state: GameState): void {
   state.pacman = createPacman(state.maze);
-  state.ghosts = createGhosts(state.maze);
+  state.ghosts = createGhosts(state.maze, state.simulationConfig);
 }
 
 function consumeReadyDelay(state: GameState, elapsedMs: number): number {
@@ -90,7 +88,8 @@ function getGhostSpawnConfig(maze: Maze, ghostId: GhostEntity["id"]) {
   return maze.ghostSpawns.find((spawn) => spawn.id === ghostId);
 }
 
-function resetGhostToSpawn(maze: Maze, ghost: GhostEntity): void {
+function resetGhostToSpawn(state: GameState, ghost: GhostEntity): void {
+  const { maze, simulationConfig } = state;
   const spawnConfig = getGhostSpawnConfig(maze, ghost.id);
 
   ghost.position = { ...ghost.spawn };
@@ -98,7 +97,9 @@ function resetGhostToSpawn(maze: Maze, ghost: GhostEntity): void {
   ghost.frightenedTimerMs = 0;
   ghost.moveProgressMs = 0;
   ghost.mode = spawnConfig?.startingMode ?? ghost.mode;
-  ghost.releaseTimerMs = spawnConfig?.releaseDelayMs ?? ghost.releaseTimerMs;
+  ghost.releaseTimerMs = spawnConfig
+    ? scaleGhostReleaseDelayMs(spawnConfig.releaseDelayMs, simulationConfig)
+    : ghost.releaseTimerMs;
 }
 
 function getGhostExitTarget(maze: Maze, ghost: GhostEntity): Position | null {
@@ -201,7 +202,7 @@ function applyPelletCollection(state: GameState, events: StepEvents): void {
     events.powerPelletEaten = true;
     state.ghosts.forEach((ghost) => {
       if (ghost.mode === "active") {
-        ghost.frightenedTimerMs = POWER_PELLET_DURATION_MS;
+        ghost.frightenedTimerMs = state.simulationConfig.powerPelletDurationMs;
       }
     });
   }
@@ -228,7 +229,7 @@ function resolveGhostCollisions(state: GameState, events: StepEvents): boolean {
     if (ghost.frightenedTimerMs > 0) {
       events.ghostsEaten.push(ghost.id);
       state.score += SCORE_VALUES.ghost;
-      resetGhostToSpawn(state.maze, ghost);
+      resetGhostToSpawn(state, ghost);
       return;
     }
 
@@ -314,7 +315,7 @@ function moveGhosts(state: GameState, events: StepEvents, elapsedMs: number): vo
     }
 
     ghost.moveProgressMs += elapsedMs;
-    const moveIntervalMs = getGhostMoveIntervalMs(ghost);
+    const moveIntervalMs = getGhostMoveIntervalMs(state, ghost);
 
     if (ghost.moveProgressMs < moveIntervalMs) {
       continue;
@@ -436,6 +437,7 @@ export function restartGame(
     lives,
     seed,
     readyDelayMs: START_DELAY_MS,
+    difficulty: state.difficulty,
   });
 }
 

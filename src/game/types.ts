@@ -1,6 +1,7 @@
 import type { Action } from "./actions";
 
 export type GameStatus = "ready" | "running" | "paused" | "won" | "lost";
+export type DifficultyId = "easy" | "standard" | "hard";
 
 export type GhostId = "blinky" | "pinky" | "inky" | "clyde";
 export type GhostMode = "house" | "exiting" | "active";
@@ -62,8 +63,17 @@ export interface StepEvents {
   levelCleared: boolean;
 }
 
+export interface SimulationConfig {
+  difficulty: DifficultyId;
+  ghostMoveIntervalMs: number;
+  frightenedGhostMoveIntervalMs: number;
+  powerPelletDurationMs: number;
+  ghostReleaseDelayMultiplier: number;
+}
+
 export interface GameState {
   maze: Maze;
+  simulationConfig: SimulationConfig;
   pacman: PacmanEntity;
   ghosts: GhostEntity[];
   pellets: Set<string>;
@@ -73,6 +83,7 @@ export interface GameState {
   lives: number;
   steps: number;
   seed: number;
+  difficulty: DifficultyId;
   rngState: number;
   status: GameStatus;
   lastAction: Action;
@@ -82,6 +93,7 @@ export interface GameState {
 
 export interface GameStateView {
   maze: Maze;
+  difficulty: DifficultyId;
   pacman: Readonly<PacmanEntity>;
   ghosts: readonly Readonly<GhostEntity>[];
   pellets: ReadonlySet<string>;

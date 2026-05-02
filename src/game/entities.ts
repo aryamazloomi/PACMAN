@@ -1,5 +1,6 @@
 import { Action } from "./actions";
-import type { GhostEntity, Maze, PacmanEntity } from "./types";
+import { scaleGhostReleaseDelayMs } from "./difficulty";
+import type { GhostEntity, Maze, PacmanEntity, SimulationConfig } from "./types";
 
 export function createPacman(maze: Maze): PacmanEntity {
   return {
@@ -11,7 +12,10 @@ export function createPacman(maze: Maze): PacmanEntity {
   };
 }
 
-export function createGhosts(maze: Maze): GhostEntity[] {
+export function createGhosts(
+  maze: Maze,
+  simulationConfig: SimulationConfig,
+): GhostEntity[] {
   return maze.ghostSpawns.map((spawn) => ({
     id: spawn.id,
     color: spawn.color,
@@ -21,7 +25,10 @@ export function createGhosts(maze: Maze): GhostEntity[] {
     mode: spawn.startingMode,
     frightenedTimerMs: 0,
     moveProgressMs: 0,
-    releaseTimerMs: spawn.releaseDelayMs,
+    releaseTimerMs: scaleGhostReleaseDelayMs(
+      spawn.releaseDelayMs,
+      simulationConfig,
+    ),
     scatterTarget: { ...spawn.scatterTarget },
   }));
 }
