@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<!-- saved from url=(0022)http://localhost:5173/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;</script>
+
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pac-Man AI portfolio project with playable browser-based agents.">
+    <title>Pac-Man AI</title>
+  <style type="text/css" data-vite-dev-id="G:/Projects/PACMAN/src/styles.css">@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(19, 201, 255, 0.08), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(0, 84, 255, 0.1), transparent 35%),
+    linear-gradient(180deg, #1d1d1d, #10141c 8%, #11161f 100%);
+  color: #d9edf4;
+  --bg: #11161f;
+  --panel: rgba(24, 29, 39, 0.92);
+  --panel-soft: rgba(18, 23, 34, 0.88);
+  --panel-strong: rgba(7, 10, 20, 0.94);
+  --line: rgba(48, 208, 255, 0.16);
+  --line-strong: rgba(48, 208, 255, 0.4);
+  --cyan: #18d6ff;
+  --cyan-soft: #7ce9ff;
+  --text-dim: #8a98b6;
+  --text-soft: #b7c7d8;
+  --success: #2bdd7d;
+  --warning: #f7c948;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: transparent;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.dashboard-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  background: rgba(10, 13, 20, 0.82);
+}
+
+.archive-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.2rem 1rem 1.4rem;
+  background:
+    linear-gradient(180deg, rgba(4, 9, 22, 0.98), rgba(5, 9, 20, 0.96)),
+    radial-gradient(circle at top, rgba(24, 214, 255, 0.12), transparent 40%);
+  border-right: 1px solid rgba(94, 112, 151, 0.2);
+}
+
+.sidebar-top {
+  display: grid;
+  gap: 1rem;
+}
+
+.brand-block {
+  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.system-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(9, 20, 32, 0.85);
+}
+
+.system-card strong,
+.nav-link,
+.sidebar-primary-button,
+.topbar-chip,
+.status-chip,
+.panel-kicker,
+.meta-chip,
+.live-indicator,
+.board-frame-status,
+.library-count,
+.sync-pill {
+  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.system-card p,
+.sidebar-help {
+  margin: 0.25rem 0 0;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.system-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: rgba(19, 34, 52, 0.88);
+  color: var(--cyan);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.nav-link {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  color: #7e8faf;
+  text-transform: uppercase;
+  transition:
+    color 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible,
+.nav-link-active {
+  color: var(--cyan);
+  background: rgba(13, 37, 52, 0.82);
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sidebar-primary-button,
+.primary-button,
+.secondary-button {
+  border-radius: 0;
+  padding: 0.9rem 1.05rem;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.sidebar-primary-button,
+.primary-button {
+  background: linear-gradient(90deg, rgba(192, 233, 240, 0.98), rgba(165, 229, 244, 0.96));
+  color: #07101b;
+  box-shadow: 0 0 20px rgba(24, 214, 255, 0.18);
+}
+
+.secondary-button {
+  background: rgba(8, 14, 28, 0.3);
+  color: #d5eef4;
+  border-color: rgba(205, 242, 250, 0.7);
+}
+
+.secondary-button:disabled,
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.sync-pill {
+  justify-self: start;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  background: rgba(7, 14, 29, 0.9);
+  border: 1px solid rgba(60, 93, 163, 0.4);
+  color: var(--cyan);
+  font-size: 0.85rem;
+}
+
+.workspace-shell {
+  padding: 1rem 1.2rem 1.35rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.topbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid rgba(58, 72, 107, 0.28);
+  background: rgba(4, 10, 24, 0.88);
+}
+
+.search-shell {
+  min-width: 0;
+  flex: 1 1 320px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(76, 88, 118, 0.3);
+  background: rgba(20, 25, 38, 0.95);
+}
+
+.search-shell input {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  min-width: 0;
+  outline: none;
+}
+
+.search-shell input::placeholder {
+  color: #6d7893;
+}
+
+.search-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(180, 197, 255, 0.6);
+  border-radius: 50%;
+  color: #a7b9d8;
+  font-size: 0.75rem;
+}
+
+.topbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.topbar-chip,
+.status-chip,
+.library-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(60, 90, 145, 0.45);
+  background: rgba(15, 23, 40, 0.9);
+  color: #d5eaf5;
+  font-size: 0.92rem;
+}
+
+.topbar-chip-accent,
+.status-chip {
+  color: var(--cyan);
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.72fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.page-stack,
+.page-grid {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.page-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.core-column,
+.intel-column {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 1.2rem 1.3rem;
+  box-shadow: 0 18px 65px rgba(0, 0, 0, 0.24);
+}
+
+.panel-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.compact-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.compact-panel-title .panel-kicker {
+  margin: 0;
+}
+
+.panel-icon {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(48, 208, 255, 0.28);
+  background: rgba(11, 25, 39, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(20, 66, 92, 0.35);
+}
+
+.panel-icon::before,
+.panel-icon::after {
+  content: "";
+  position: absolute;
+}
+
+.panel-icon-stats::before {
+  left: 4px;
+  bottom: 4px;
+  width: 3px;
+  height: 7px;
+  background: var(--cyan);
+  box-shadow:
+    5px -3px 0 0 var(--cyan),
+    10px -6px 0 0 var(--cyan);
+}
+
+.panel-icon-runtime::before {
+  inset: 6px 4px 6px 4px;
+  border-top: 2px solid var(--cyan);
+  border-right: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 50%;
+}
+
+.panel-icon-runtime::after {
+  top: 4px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  background: var(--cyan);
+  border-radius: 50%;
+}
+
+.panel-icon-controller::before {
+  left: 5px;
+  top: 5px;
+  width: 12px;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow:
+    0 5px 0 0 var(--cyan),
+    0 10px 0 0 var(--cyan);
+}
+
+.panel-icon-controller::after {
+  left: 8px;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  background: var(--cyan);
+  box-shadow:
+    4px 5px 0 0 var(--cyan),
+    -3px 10px 0 0 var(--cyan);
+}
+
+.panel-icon-reports::before {
+  left: 4px;
+  top: 4px;
+  width: 12px;
+  height: 10px;
+  border: 1px solid var(--cyan);
+}
+
+.panel-icon-reports::after {
+  left: 7px;
+  top: 8px;
+  width: 8px;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow: 0 4px 0 0 var(--cyan);
+}
+
+.panel-kicker,
+.dossier-kicker {
+  margin: 0 0 0.45rem;
+  color: var(--cyan);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.hero-panel h1,
+.panel h2,
+.panel h3 {
+  margin: 0;
+  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
+  font-weight: 700;
+  color: #e2f4fb;
+}
+
+.hero-panel h1 {
+  font-size: clamp(2rem, 3vw, 3.05rem);
+  line-height: 0.98;
+  max-width: 12ch;
+}
+
+.panel h2 {
+  font-size: clamp(1.65rem, 2vw, 2.15rem);
+}
+
+.panel h3 {
+  font-size: 1.2rem;
+}
+
+.panel-copy,
+.detail-copy,
+.dossier-summary,
+.dossier-section,
+.insight-card p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.lead-copy {
+  margin-bottom: 1rem;
+}
+
+.hero-panel {
+  background:
+    linear-gradient(135deg, rgba(12, 19, 29, 0.96), rgba(13, 24, 38, 0.88)),
+    radial-gradient(circle at top right, rgba(24, 214, 255, 0.08), transparent 35%);
+}
+
+.brief-chip-row,
+.meta-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.brief-chip-row {
+  margin-top: 1rem;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.72rem;
+  border: 1px solid rgba(50, 140, 170, 0.3);
+  background: rgba(7, 15, 26, 0.78);
+  color: var(--cyan-soft);
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.controls-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.controls-list p {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.board-panel {
+  min-height: 640px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+  padding: 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(5, 10, 18, 0.98), rgba(8, 13, 25, 0.94)),
+    radial-gradient(circle at center, rgba(24, 214, 255, 0.06), transparent 50%);
+  overflow: hidden;
+}
+
+.board-stage {
+  display: grid;
+  place-items: center;
+}
+
+.game-box {
+  position: relative;
+  width: min(100%, 456px);
+}
+
+.board-frame-header,
+.board-frame-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #7587ad;
+  font-size: 0.92rem;
+}
+
+.live-indicator,
+.board-frame-status {
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.board-frame-status {
+  color: #7d8fb1;
+}
+
+.game-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid rgba(24, 214, 255, 0.18);
+  background: rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(32, 53, 84, 0.5),
+    inset 0 0 60px rgba(24, 214, 255, 0.04);
+}
+
+.stats-panel,
+.analytics-panel,
+.control-panel,
+.config-panel,
+.logs-panel {
+  background: rgba(27, 31, 41, 0.94);
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.metric,
+.evaluation-card,
+.insight-card,
+.dossier-card {
+  background: rgba(40, 42, 50, 0.9);
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  padding: 1rem;
+}
+
+.metric span,
+.evaluation-card span,
+.runtime-row span,
+.progress-meta span,
+.detail-copy span,
+.dossier-section span,
+.autonomy-header span {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.metric strong,
+.evaluation-card strong,
+.runtime-row strong,
+.progress-meta strong,
+.autonomy-header strong {
+  font-size: 1.65rem;
+  font-weight: 500;
+  color: #def6ff;
+}
+
+.metric-lives strong {
+  font-size: 1rem;
+}
+
+.life-pips {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.3rem;
+}
+
+.life-pip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(205, 242, 250, 0.85);
+  background: transparent;
+}
+
+.life-pip-active {
+  background: rgba(205, 242, 250, 0.95);
+}
+
+.progress-block {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(35, 39, 47, 0.88);
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.7rem;
+}
+
+.progress-meta strong {
+  font-size: 1rem;
+}
+
+.progress-track,
+.autonomy-meter {
+  height: 10px;
+  background: rgba(15, 34, 70, 0.64);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(74, 218, 244, 0.98), rgba(52, 155, 255, 0.55));
+}
+
+.runtime-list {
+  display: grid;
+}
+
+.runtime-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(74, 82, 112, 0.22);
+}
+
+.runtime-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.runtime-row strong {
+  font-size: 1rem;
+  text-align: right;
+}
+
+.status-copy {
+  margin-top: 1rem;
+}
+
+.compact-actions {
+  margin-top: 1rem;
+}
+
+.evaluation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.evaluation-card strong {
+  font-size: 1.1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.field span {
+  color: #d8edf8;
+}
+
+.field select,
+.field input {
+  width: 100%;
+  background: rgba(11, 20, 34, 0.92);
+  color: inherit;
+  border: 1px solid rgba(71, 98, 152, 0.34);
+  padding: 0.85rem 0.9rem;
+}
+
+.field input::-webkit-outer-spin-button,
+.field input::-webkit-inner-spin-button {
+  margin: 0;
+}
+
+.field input[type="number"] {
+  appearance: textfield;
+}
+
+.controller-field {
+  margin-bottom: 0.8rem;
+}
+
+.controller-runtime-list {
+  margin-top: 1rem;
+}
+
+.detail-copy {
+  margin-top: 0.95rem;
+}
+
+.autonomy-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(35, 39, 47, 0.88);
+}
+
+.autonomy-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.7rem;
+}
+
+.autonomy-header strong {
+  font-size: 1rem;
+}
+
+.autonomy-meter {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.35rem;
+  padding: 0;
+  background: transparent;
+  height: auto;
+}
+
+.autonomy-bar {
+  height: 8px;
+  background: rgba(76, 86, 111, 0.52);
+}
+
+.autonomy-bar-active {
+  background: linear-gradient(90deg, rgba(48, 216, 255, 0.95), rgba(38, 181, 255, 0.72));
+}
+
+.insight-panel {
+  background: rgba(28, 31, 39, 0.94);
+}
+
+.insight-icon {
+  display: grid;
+  place-items: center;
+  min-width: 54px;
+  height: 54px;
+  padding: 0 0.9rem;
+  background: rgba(14, 43, 60, 0.76);
+  border: 1px solid rgba(24, 214, 255, 0.2);
+  color: var(--cyan);
+  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
+  font-weight: 700;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.reports-controls-grid,
+.reports-ranking-grid,
+.reports-detail-grid,
+.reports-detail-metrics {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.reports-controls-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
+.reports-selection-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 0.2rem;
+}
+
+.reports-inline-actions {
+  margin-top: 0;
+}
+
+.reports-actions {
+  margin-top: 1rem;
+}
+
+.agent-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.agent-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(35, 39, 47, 0.88);
+}
+
+.agent-toggle input {
+  margin-top: 0.15rem;
+  accent-color: var(--cyan);
+}
+
+.agent-toggle strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #e2f4fb;
+}
+
+.agent-toggle span {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.agent-toggle-active {
+  border-color: rgba(48, 214, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(48, 214, 255, 0.1);
+}
+
+.reports-note {
+  margin-top: 0;
+  min-height: 100%;
+}
+
+.reports-table-shell {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid rgba(74, 82, 112, 0.22);
+  text-align: left;
+}
+
+.reports-table th {
+  color: var(--cyan);
+  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(10, 16, 28, 0.96);
+}
+
+.reports-table td {
+  color: #dcecf7;
+}
+
+.reports-ranking-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reports-ranking-card strong {
+  font-size: 1.15rem;
+}
+
+.reports-ranking-card p {
+  margin: 0.6rem 0 0;
+  color: var(--text-soft);
+}
+
+.reports-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reports-detail-card {
+  gap: 1rem;
+}
+
+.reports-detail-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reports-metric-cell strong {
+  font-size: 1.05rem;
+}
+
+.reports-bullet-section span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+.reports-bullet-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.library-panel {
+  background: rgba(24, 28, 36, 0.94);
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.dossier-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.empty-library {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(40, 42, 50, 0.9);
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.config-note {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(35, 39, 47, 0.88);
+}
+
+.config-note strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #e2f4fb;
+}
+
+.config-note p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.difficulty-card {
+  appearance: none;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(40, 42, 50, 0.9);
+  color: inherit;
+  text-align: left;
+}
+
+.difficulty-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #e2f4fb;
+}
+
+.difficulty-card span {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.difficulty-card-active {
+  border-color: rgba(48, 214, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(48, 214, 255, 0.1);
+}
+
+.dossier-card-active {
+  border-color: rgba(48, 214, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(48, 214, 255, 0.1);
+}
+
+.dossier-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.dossier-kicker {
+  margin-bottom: 0.25rem;
+}
+
+.dossier-section span {
+  margin-bottom: 0.2rem;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 6, 14, 0.62);
+}
+
+.overlay-card {
+  width: min(380px, calc(100% - 2rem));
+  padding: 1.5rem;
+  border: 1px solid rgba(205, 242, 250, 0.85);
+  background: rgba(7, 10, 20, 0.96);
+  box-shadow: 0 0 28px rgba(24, 214, 255, 0.12);
+}
+
+.overlay-card-compact {
+  text-align: center;
+}
+
+.overlay-card-compact h2 {
+  margin: 0 0 0.8rem;
+}
+
+.overlay-card-compact .panel-copy {
+  max-width: 28ch;
+  margin: 0 auto;
+}
+
+.overlay-card-compact .hero-actions {
+  justify-content: center;
+}
+
+@media (max-width: 1280px) {
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .intel-column {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid rgba(94, 112, 151, 0.2);
+  }
+
+  .sidebar-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .intel-column,
+  .page-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-shell {
+    padding: 0.75rem;
+  }
+
+  .topbar,
+  .progress-meta,
+  .panel-header,
+  .dossier-header,
+  .reports-selection-header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .topbar-meta {
+    width: 100%;
+    justify-content: start;
+  }
+
+  .library-grid,
+  .score-grid,
+  .difficulty-grid,
+  .evaluation-grid,
+  .insight-grid,
+  .reports-controls-grid,
+  .reports-ranking-grid,
+  .reports-detail-grid,
+  .reports-detail-metrics,
+  .sidebar-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-toggle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .board-panel {
+    min-height: 500px;
+  }
+
+  .hero-panel h1 {
+    max-width: none;
+  }
+}
+</style></head>
+  <body data-new-gr-c-s-check-loaded="14.1286.0" data-gr-ext-installed="">
+    <div id="root"><main class="dashboard-shell"><aside class="archive-sidebar"><div class="sidebar-top"><div class="brand-block">PAC-MAN ARCHIVE</div><div class="system-card"><div class="system-icon" aria-hidden="true">+</div><div><strong>Neural-Net 01</strong><p>Active controller: Behavior Tree Agent</p></div></div><nav class="sidebar-nav" aria-label="Dashboard pages"><button type="button" class="nav-link">Core Dashboard</button><button type="button" class="nav-link">Neural Architecture</button><button type="button" class="nav-link">Metric Analytics</button><button type="button" class="nav-link nav-link-active">Reports</button><button type="button" class="nav-link">Simulation Logs</button><button type="button" class="nav-link">System Config</button></nav></div><div class="sidebar-footer"><button class="sidebar-primary-button">Reload Latest Config</button><p class="sidebar-help">Reload the currently applied controller and difficulty into an idle board state. Starting the run now happens from the in-game overlay.</p><div class="sync-pill">ARCHIVE_SYNC_ACTIVE</div></div></aside><section class="workspace-shell"><header class="topbar"><label class="search-shell"><span class="search-icon" aria-hidden="true">O</span><input placeholder="QUERY CONTROLLER DOSSIERS..." aria-label="Search agent descriptions" type="search" value=""></label><div class="topbar-meta"><span class="topbar-chip">REPORTS</span><span class="topbar-chip">STATE lost</span><span class="topbar-chip topbar-chip-accent">Behavior Tree Agent</span></div></header><div class="page-stack"><section class="panel reports-panel"><div class="panel-header"><div><p class="panel-kicker">Reports</p><h2>Automatic agent evaluation</h2></div></div><p class="panel-copy lead-copy">Run every selected AI controller headlessly on the same deterministic seed list, compare score and survival behavior, and export the latest report as JSON.</p><div class="reports-controls-grid"><label class="field"><span>Episodes per agent</span><select><option value="10">10 episodes</option><option value="50">50 episodes</option><option value="100">100 episodes</option><option value="500">500 episodes</option><option value="1000">1,000 episodes</option></select></label><label class="field"><span>Max steps per episode</span><input min="1" step="100" type="number" value="5000"></label><div class="config-note reports-note"><strong>Evaluation profile</strong><p>Difficulty: Standard. Rendering stays off during reports, and the runner yields in chunks so the dashboard remains usable during large batches.</p></div></div><div class="reports-selection-header"><div class="compact-panel-title"><span class="panel-icon panel-icon-reports" aria-hidden="true"></span><p class="panel-kicker">Agent set</p></div><div class="hero-actions reports-inline-actions"><button type="button" class="secondary-button">Select all</button><button type="button" class="secondary-button">Clear</button></div></div><div class="agent-toggle-grid"><label class="agent-toggle agent-toggle-active"><input type="checkbox" checked=""><div><strong>Random Agent</strong><span>Seeded sampling</span></div></label><label class="agent-toggle agent-toggle-active"><input type="checkbox" checked=""><div><strong>Greedy Pellet Agent</strong><span>Shortest path</span></div></label><label class="agent-toggle agent-toggle-active"><input type="checkbox" checked=""><div><strong>Ghost Avoidance Agent</strong><span>Utility scoring</span></div></label><label class="agent-toggle agent-toggle-active"><input type="checkbox" checked=""><div><strong>A* Agent</strong><span>Weighted A*</span></div></label><label class="agent-toggle agent-toggle-active"><input type="checkbox" checked=""><div><strong>Behavior Tree Agent</strong><span>Behavior tree</span></div></label></div><div class="hero-actions reports-actions"><button type="button" class="primary-button">Run selected agents</button><button type="button" class="secondary-button" disabled="">Stop</button><button type="button" class="secondary-button">Clear results</button><button type="button" class="secondary-button">Export JSON</button></div></section><section class="panel reports-progress-panel"><div class="panel-header"><div class="compact-panel-title"><span class="panel-icon panel-icon-runtime" aria-hidden="true"></span><p class="panel-kicker">Progress</p></div></div><div class="progress-block"><div class="progress-meta"><div><span>Status</span><strong>Complete</strong></div><div><span>Completion</span><strong>100%</strong></div></div><div class="progress-track"><div class="progress-fill" style="width: 100%;"></div></div></div><div class="runtime-list"><div class="runtime-row"><span>Current agent</span><strong>Waiting for next run</strong></div><div class="runtime-row"><span>Current episode</span><strong>0/0</strong></div><div class="runtime-row"><span>Completed episodes</span><strong>5000/5000</strong></div><div class="runtime-row"><span>Completed agents</span><strong>5/5</strong></div></div></section><section class="panel reports-summary-panel"><div class="panel-header"><div><p class="panel-kicker">Summary table</p><h2>Cross-agent comparison</h2></div></div><p class="panel-copy">Latest run: 5/2/2026, 10:16:28 PM. Shared seeds: 1,000 per agent.</p><div class="reports-table-shell"><table class="reports-table"><thead><tr><th>Agent</th><th>Episodes</th><th>Avg Score</th><th>Best Score</th><th>Win Rate</th><th>Death Rate</th><th>Avg Survival</th><th>Avg Pellets</th><th>Avg Ghosts</th><th>Illegal Moves</th><th>Avg Decision</th></tr></thead><tbody><tr><td>Behavior Tree Agent</td><td>1,000</td><td>2493.9</td><td>3760</td><td>42%</td><td>58%</td><td>40.77 s</td><td>113.4</td><td>4.80</td><td>0.00</td><td>0.55 ms</td></tr><tr><td>A* Agent</td><td>1,000</td><td>2354.7</td><td>2760</td><td>100%</td><td>0%</td><td>34.70 s</td><td>126.0</td><td>1.98</td><td>0.00</td><td>0.69 ms</td></tr><tr><td>Ghost Avoidance Agent</td><td>1,000</td><td>1001.9</td><td>2070</td><td>0%</td><td>100%</td><td>46.92 s</td><td>77.7</td><td>0.40</td><td>0.00</td><td>0.01 ms</td></tr><tr><td>Greedy Pellet Agent</td><td>1,000</td><td>460.0</td><td>460</td><td>0%</td><td>100%</td><td>9.23 s</td><td>41.0</td><td>0.00</td><td>0.00</td><td>0.00 ms</td></tr><tr><td>Random Agent</td><td>1,000</td><td>153.1</td><td>730</td><td>0%</td><td>100%</td><td>12.68 s</td><td>15.0</td><td>0.01</td><td>0.00</td><td>0.00 ms</td></tr></tbody></table></div></section><section class="panel reports-ranking-panel"><div class="panel-header"><div><p class="panel-kicker">Ranking</p><h2>Highlights</h2></div></div><div class="reports-ranking-grid"><article class="metric reports-ranking-card"><span>Best average score</span><strong>Behavior Tree Agent</strong><p>2493.87</p></article><article class="metric reports-ranking-card"><span>Best win rate</span><strong>A* Agent</strong><p>100%</p></article><article class="metric reports-ranking-card"><span>Best survival time</span><strong>Ghost Avoidance Agent</strong><p>46.92 s</p></article><article class="metric reports-ranking-card"><span>Most consistent</span><strong>Greedy Pellet Agent</strong><p>0.00</p></article><article class="metric reports-ranking-card"><span>Fastest decisions</span><strong>Random Agent</strong><p>0.00 ms</p></article><article class="metric reports-ranking-card"><span>Lowest illegal moves</span><strong>Random Agent</strong><p>0.00</p></article></div></section><section class="panel reports-details-panel"><div class="panel-header"><div><p class="panel-kicker">Detailed reports</p><h2>Per-agent breakdown</h2></div></div><div class="reports-detail-grid"><article class="dossier-card reports-detail-card"><div class="dossier-header"><div><p class="dossier-kicker">Hierarchical Policy</p><h3>Behavior Tree Agent</h3></div><span class="meta-chip">Behavior tree</span></div><p class="dossier-summary">A higher-level controller that switches between fleeing, chasing frightened ghosts, and route planning based on the current tactical situation.</p><div class="reports-detail-metrics"><div class="metric reports-metric-cell"><span>Avg Score</span><strong>2493.9</strong></div><div class="metric reports-metric-cell"><span>Win Rate</span><strong>42%</strong></div><div class="metric reports-metric-cell"><span>Avg Reward</span><strong>101.87</strong></div><div class="metric reports-metric-cell"><span>Avg Survival</span><strong>40.77 s</strong></div><div class="metric reports-metric-cell"><span>Avg Pellets</span><strong>113.4</strong></div><div class="metric reports-metric-cell"><span>Illegal Moves</span><strong>0.00</strong></div></div><div class="reports-bullet-section"><span>Strengths</span><ul><li>Best tactical flexibility across changing board states.</li><li>Reuses simpler controllers without duplicating logic.</li></ul></div><div class="reports-bullet-section"><span>Weaknesses</span><ul><li>More moving parts make tuning harder.</li><li>Can inherit blind spots from the underlying sub-policies.</li></ul></div><p class="dossier-section"><span>Notable behavior</span>It switches modes mid-run, fleeing when danger spikes and turning aggressive again when frightened ghosts become reachable.</p></article><article class="dossier-card reports-detail-card"><div class="dossier-header"><div><p class="dossier-kicker">Planner</p><h3>A* Agent</h3></div><span class="meta-chip">Weighted A*</span></div><p class="dossier-summary">A cost-aware planner that uses A* search to weigh target value against ghost danger, producing more deliberate routes than the greedy policy.</p><div class="reports-detail-metrics"><div class="metric reports-metric-cell"><span>Avg Score</span><strong>2354.7</strong></div><div class="metric reports-metric-cell"><span>Win Rate</span><strong>100%</strong></div><div class="metric reports-metric-cell"><span>Avg Reward</span><strong>135.49</strong></div><div class="metric reports-metric-cell"><span>Avg Survival</span><strong>34.70 s</strong></div><div class="metric reports-metric-cell"><span>Avg Pellets</span><strong>126.0</strong></div><div class="metric reports-metric-cell"><span>Illegal Moves</span><strong>0.00</strong></div></div><div class="reports-bullet-section"><span>Strengths</span><ul><li>Finds cleaner routes than purely greedy collection.</li><li>Balances path efficiency with danger-aware costs.</li></ul></div><div class="reports-bullet-section"><span>Weaknesses</span><ul><li>Slower decisions than simpler heuristics.</li><li>Still depends on hand-crafted danger costs instead of learned value.</li></ul></div><p class="dossier-section"><span>Notable behavior</span>It tends to reroute around ghost-heavy lanes and can trade a short pellet path for a safer longer path with better expected return.</p></article><article class="dossier-card reports-detail-card"><div class="dossier-header"><div><p class="dossier-kicker">Safety Heuristic</p><h3>Ghost Avoidance Agent</h3></div><span class="meta-chip">Utility scoring</span></div><p class="dossier-summary">A survival-first controller that scores nearby moves by balancing ghost danger, reachable safety, and the value of pellets or power pellets.</p><div class="reports-detail-metrics"><div class="metric reports-metric-cell"><span>Avg Score</span><strong>1001.9</strong></div><div class="metric reports-metric-cell"><span>Win Rate</span><strong>0%</strong></div><div class="metric reports-metric-cell"><span>Avg Reward</span><strong>-19.32</strong></div><div class="metric reports-metric-cell"><span>Avg Survival</span><strong>46.92 s</strong></div><div class="metric reports-metric-cell"><span>Avg Pellets</span><strong>77.7</strong></div><div class="metric reports-metric-cell"><span>Illegal Moves</span><strong>0.00</strong></div></div><div class="reports-bullet-section"><span>Strengths</span><ul><li>Usually survives longer than simple greedy policies.</li><li>Interpretable scoring logic makes failures easier to debug.</li></ul></div><div class="reports-bullet-section"><span>Weaknesses</span><ul><li>May sacrifice score by over-prioritizing safety.</li><li>Hand-tuned weights can behave poorly in edge cases.</li></ul></div><p class="dossier-section"><span>Notable behavior</span>It prefers safer corridors and often gives up a quick pellet route when nearby ghost pressure spikes.</p></article><article class="dossier-card reports-detail-card"><div class="dossier-header"><div><p class="dossier-kicker">Search Heuristic</p><h3>Greedy Pellet Agent</h3></div><span class="meta-chip">Shortest path</span></div><p class="dossier-summary">A fast resource-collection agent that greedily chases the nearest pellet or power pellet by shortest path distance.</p><div class="reports-detail-metrics"><div class="metric reports-metric-cell"><span>Avg Score</span><strong>460.0</strong></div><div class="metric reports-metric-cell"><span>Win Rate</span><strong>0%</strong></div><div class="metric reports-metric-cell"><span>Avg Reward</span><strong>-25.08</strong></div><div class="metric reports-metric-cell"><span>Avg Survival</span><strong>9.23 s</strong></div><div class="metric reports-metric-cell"><span>Avg Pellets</span><strong>41.0</strong></div><div class="metric reports-metric-cell"><span>Illegal Moves</span><strong>0.00</strong></div></div><div class="reports-bullet-section"><span>Strengths</span><ul><li>Collects nearby pellets efficiently in low-risk corridors.</li><li>Low decision latency compared with deeper planners.</li></ul></div><div class="reports-bullet-section"><span>Weaknesses</span><ul><li>Can walk into danger because it optimizes locally.</li><li>Does not reason far ahead about ghost pressure.</li></ul></div><p class="dossier-section"><span>Notable behavior</span>It often looks smart early in a run, then collapses when the nearest pellet route passes close to an active ghost.</p></article><article class="dossier-card reports-detail-card"><div class="dossier-header"><div><p class="dossier-kicker">Baseline Policy</p><h3>Random Agent</h3></div><span class="meta-chip">Seeded sampling</span></div><p class="dossier-summary">A deliberately weak baseline that selects a legal action at random so we can measure how much smarter the other controllers really are.</p><div class="reports-detail-metrics"><div class="metric reports-metric-cell"><span>Avg Score</span><strong>153.1</strong></div><div class="metric reports-metric-cell"><span>Win Rate</span><strong>0%</strong></div><div class="metric reports-metric-cell"><span>Avg Reward</span><strong>-59.99</strong></div><div class="metric reports-metric-cell"><span>Avg Survival</span><strong>12.68 s</strong></div><div class="metric reports-metric-cell"><span>Avg Pellets</span><strong>15.0</strong></div><div class="metric reports-metric-cell"><span>Illegal Moves</span><strong>0.00</strong></div></div><div class="reports-bullet-section"><span>Strengths</span><ul><li>Very fast to evaluate across large seed sets.</li><li>Good at exposing environment regressions and illegal-move bugs.</li></ul></div><div class="reports-bullet-section"><span>Weaknesses</span><ul><li>No planning, memory, or survival instinct.</li><li>Produces unstable score and survival outcomes.</li></ul></div><p class="dossier-section"><span>Notable behavior</span>Score swings widely across seeds because every turn is sampled with no strategy beyond legality.</p></article></div></section></div></section></main></div>
+    <script type="module" src="http://localhost:5173/src/main.tsx"></script>
+  
+  
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"><template shadowrootmode="open"><style>
+      div.grammarly-desktop-integration {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select:none;
+        user-select:none;
+      }
+
+      div.grammarly-desktop-integration:before {
+        content: attr(data-content);
+      }
+    </style><div aria-label="grammarly-integration" role="group" tabindex="-1" class="grammarly-desktop-integration" data-content="{&quot;mode&quot;:&quot;full&quot;,&quot;isActive&quot;:true,&quot;isUserDisabled&quot;:false}"></div></template></grammarly-desktop-integration></html>
