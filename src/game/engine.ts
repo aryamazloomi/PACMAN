@@ -15,6 +15,7 @@ import {
   getAvailableNeighbors,
   getGhostLegalActions,
   getLegalActions,
+  isActionLegal,
   isGhostDoor,
   isGhostHouseTile,
   isWall,
@@ -35,6 +36,10 @@ function createStepEvents(): StepEvents {
     wallBump: false,
     levelCleared: false,
   };
+}
+
+function isTerminalStatus(status: GameState["status"]): boolean {
+  return status === "won" || status === "lost";
 }
 
 function getGhostMoveIntervalMs(state: GameState, ghost: GhostEntity): number {
@@ -385,7 +390,7 @@ export function stepGame(
     state.reward = calculateReward(events);
     return {
       state,
-      done: state.status === "won" || state.status === "lost",
+      done: isTerminalStatus(state.status),
       reward: state.reward,
       events,
     };
@@ -421,7 +426,7 @@ export function stepGame(
 
   return {
     state,
-    done: state.status === "won" || state.status === "lost",
+    done: isTerminalStatus(state.status),
     reward: state.reward,
     events,
   };
