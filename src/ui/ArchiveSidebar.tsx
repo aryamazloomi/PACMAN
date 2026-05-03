@@ -2,6 +2,7 @@ export type DashboardPage =
   | "dashboard"
   | "neural"
   | "metrics"
+  | "reports"
   | "logs"
   | "config";
 
@@ -16,6 +17,7 @@ const navItems: Array<{ page: DashboardPage; label: string }> = [
   { page: "dashboard", label: "Core Dashboard" },
   { page: "neural", label: "Neural Architecture" },
   { page: "metrics", label: "Metric Analytics" },
+  { page: "reports", label: "Reports" },
   { page: "logs", label: "Simulation Logs" },
   { page: "config", label: "System Config" },
 ];

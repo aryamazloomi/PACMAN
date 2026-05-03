@@ -398,6 +398,23 @@ a {
     -3px 10px 0 0 var(--cyan);
 }
 
+.panel-icon-reports::before {
+  left: 4px;
+  top: 4px;
+  width: 12px;
+  height: 10px;
+  border: 1px solid var(--cyan);
+}
+
+.panel-icon-reports::after {
+  left: 7px;
+  top: 8px;
+  width: 8px;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow: 0 4px 0 0 var(--cyan);
+}
+
 .panel-kicker,
 .dossier-kicker {
   margin: 0 0 0.45rem;
@@ -693,12 +710,22 @@ a {
   color: #d8edf8;
 }
 
-.field select {
+.field select,
+.field input {
   width: 100%;
   background: rgba(11, 20, 34, 0.92);
   color: inherit;
   border: 1px solid rgba(71, 98, 152, 0.34);
   padding: 0.85rem 0.9rem;
+}
+
+.field input::-webkit-outer-spin-button,
+.field input::-webkit-inner-spin-button {
+  margin: 0;
+}
+
+.field input[type="number"] {
+  appearance: textfield;
 }
 
 .controller-field {
@@ -771,6 +798,153 @@ a {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem;
   margin: 1rem 0;
+}
+
+.reports-controls-grid,
+.reports-ranking-grid,
+.reports-detail-grid,
+.reports-detail-metrics {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.reports-controls-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
+.reports-selection-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 0.2rem;
+}
+
+.reports-inline-actions {
+  margin-top: 0;
+}
+
+.reports-actions {
+  margin-top: 1rem;
+}
+
+.agent-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.agent-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+  padding: 1rem;
+  border: 1px solid rgba(96, 111, 146, 0.18);
+  background: rgba(35, 39, 47, 0.88);
+}
+
+.agent-toggle input {
+  margin-top: 0.15rem;
+  accent-color: var(--cyan);
+}
+
+.agent-toggle strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #e2f4fb;
+}
+
+.agent-toggle span {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.agent-toggle-active {
+  border-color: rgba(48, 214, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(48, 214, 255, 0.1);
+}
+
+.reports-note {
+  margin-top: 0;
+  min-height: 100%;
+}
+
+.reports-table-shell {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid rgba(74, 82, 112, 0.22);
+  text-align: left;
+}
+
+.reports-table th {
+  color: var(--cyan);
+  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(10, 16, 28, 0.96);
+}
+
+.reports-table td {
+  color: #dcecf7;
+}
+
+.reports-ranking-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reports-ranking-card strong {
+  font-size: 1.15rem;
+}
+
+.reports-ranking-card p {
+  margin: 0.6rem 0 0;
+  color: var(--text-soft);
+}
+
+.reports-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reports-detail-card {
+  gap: 1rem;
+}
+
+.reports-detail-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reports-metric-cell strong {
+  font-size: 1.05rem;
+}
+
+.reports-bullet-section span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+.reports-bullet-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text-soft);
+  line-height: 1.7;
 }
 
 .library-panel {
@@ -941,7 +1115,8 @@ a {
   .topbar,
   .progress-meta,
   .panel-header,
-  .dossier-header {
+  .dossier-header,
+  .reports-selection-header {
     flex-direction: column;
     align-items: start;
   }
@@ -956,7 +1131,15 @@ a {
   .difficulty-grid,
   .evaluation-grid,
   .insight-grid,
+  .reports-controls-grid,
+  .reports-ranking-grid,
+  .reports-detail-grid,
+  .reports-detail-metrics,
   .sidebar-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-toggle-grid {
     grid-template-columns: 1fr;
   }
 

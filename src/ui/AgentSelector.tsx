@@ -9,6 +9,10 @@ export interface AgentOption {
   howItWorks: string;
   studentLens: string;
   industryLens: string;
+  strengths: string[];
+  weaknesses: string[];
+  notableBehavior: string;
+  automaticEvaluation?: boolean;
 }
 
 interface AgentSelectorProps {

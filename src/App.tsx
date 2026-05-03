@@ -10,6 +10,16 @@ import { HumanController } from "./controllers/HumanController";
 import { RandomAgent } from "./controllers/RandomAgent";
 import { evaluateController } from "./evaluation/evaluateAgent";
 import type { EvaluationMetrics } from "./evaluation/metrics";
+import {
+  DEFAULT_REPORT_MAX_STEPS,
+  DEFAULT_REPORT_EPISODES,
+} from "./evaluation/metrics";
+import {
+  evaluateAgentsReport,
+  type ReportAgentDefinition,
+  type ReportsEvaluationProgress,
+  type ReportsEvaluationResult,
+} from "./evaluation/reports";
 import { Action } from "./game/actions";
 import { DEFAULT_SEED, MAX_FRAME_DELTA_MS, SIMULATION_STEP_MS } from "./game/constants";
 import { DEFAULT_DIFFICULTY, getDifficultyOption } from "./game/difficulty";
@@ -25,6 +35,7 @@ import { ArchiveSidebar, type DashboardPage } from "./ui/ArchiveSidebar";
 import { GameOverlay } from "./ui/GameOverlay";
 import { Hud } from "./ui/Hud";
 import { MetricsPanel } from "./ui/MetricsPanel";
+import { ReportsPanel } from "./ui/ReportsPanel";
 import { RuntimePanel } from "./ui/RuntimePanel";
 import { SimulationLogsPanel } from "./ui/SimulationLogsPanel";
 import { SystemConfigPanel } from "./ui/SystemConfigPanel";
@@ -33,6 +44,7 @@ import { readStorage, writeStorage } from "./utils/storage";
 
 const CONTROLLER_STORAGE_KEY = "pacman-ai-controller";
 const DIFFICULTY_STORAGE_KEY = "pacman-ai-difficulty";
+const REPORT_STORAGE_KEY = "pacman-ai-reports-summary";
 
 const humanController = new HumanController();
 
@@ -52,6 +64,17 @@ const controllerOptions: AgentOption[] = [
       "This is the clearest example of policy versus environment. A controller suggests an action, but the simulation remains the final authority.",
     industryLens:
       "Human-in-the-loop baselines are essential for QA, demos, and debugging because they reveal whether poor outcomes come from the policy or from the environment itself.",
+    strengths: [
+      "Best for feel-testing controls and game balance.",
+      "Useful as a direct human baseline against AI agents.",
+    ],
+    weaknesses: [
+      "Not suitable for automatic batch evaluation.",
+      "Results vary heavily with player skill and focus.",
+    ],
+    notableBehavior:
+      "Human play often reveals whether a bad outcome comes from the game rules or from the agent policy itself.",
+    automaticEvaluation: false,
   },
   {
     id: "random",
@@ -68,6 +91,16 @@ const controllerOptions: AgentOption[] = [
       "This shows why baselines matter. Even a naive random policy can expose bugs in legal moves, collision timing, and score accounting.",
     industryLens:
       "Teams often keep a simple control policy like this around as a regression oracle and smoke test for changes to the environment or action space.",
+    strengths: [
+      "Very fast to evaluate across large seed sets.",
+      "Good at exposing environment regressions and illegal-move bugs.",
+    ],
+    weaknesses: [
+      "No planning, memory, or survival instinct.",
+      "Produces unstable score and survival outcomes.",
+    ],
+    notableBehavior:
+      "Score swings widely across seeds because every turn is sampled with no strategy beyond legality.",
   },
   {
     id: "greedy",
@@ -84,6 +117,16 @@ const controllerOptions: AgentOption[] = [
       "It is a good introduction to local optimization. Students can see how a policy can be computationally simple and still look intelligent for short horizons.",
     industryLens:
       "Greedy heuristics are common when low latency matters more than perfect global optimality, especially in routing, inventory picking, and task allocation.",
+    strengths: [
+      "Collects nearby pellets efficiently in low-risk corridors.",
+      "Low decision latency compared with deeper planners.",
+    ],
+    weaknesses: [
+      "Can walk into danger because it optimizes locally.",
+      "Does not reason far ahead about ghost pressure.",
+    ],
+    notableBehavior:
+      "It often looks smart early in a run, then collapses when the nearest pellet route passes close to an active ghost.",
   },
   {
     id: "avoidance",
@@ -100,6 +143,16 @@ const controllerOptions: AgentOption[] = [
       "This is a compact example of feature engineering. Instead of learning weights, the policy encodes domain knowledge directly into the scoring function.",
     industryLens:
       "Rule-based risk scoring is still common in production systems when interpretability and predictable failure modes matter more than raw benchmark performance.",
+    strengths: [
+      "Usually survives longer than simple greedy policies.",
+      "Interpretable scoring logic makes failures easier to debug.",
+    ],
+    weaknesses: [
+      "May sacrifice score by over-prioritizing safety.",
+      "Hand-tuned weights can behave poorly in edge cases.",
+    ],
+    notableBehavior:
+      "It prefers safer corridors and often gives up a quick pellet route when nearby ghost pressure spikes.",
   },
   {
     id: "astar",
@@ -116,6 +169,16 @@ const controllerOptions: AgentOption[] = [
       "It demonstrates how classic search becomes more realistic once path cost includes risk, not just distance.",
     industryLens:
       "This mirrors many operational planners where shortest path is not enough and cost maps must capture risk, congestion, or safety constraints.",
+    strengths: [
+      "Finds cleaner routes than purely greedy collection.",
+      "Balances path efficiency with danger-aware costs.",
+    ],
+    weaknesses: [
+      "Slower decisions than simpler heuristics.",
+      "Still depends on hand-crafted danger costs instead of learned value.",
+    ],
+    notableBehavior:
+      "It tends to reroute around ghost-heavy lanes and can trade a short pellet path for a safer longer path with better expected return.",
   },
   {
     id: "behavior-tree",
@@ -132,8 +195,34 @@ const controllerOptions: AgentOption[] = [
       "This is a clean example of policy arbitration: smaller specialist controllers become reusable building blocks inside a larger decision hierarchy.",
     industryLens:
       "Behavior trees remain popular in games, robotics, and industrial autonomy because they make complex decision logic modular, inspectable, and easy to tune.",
+    strengths: [
+      "Best tactical flexibility across changing board states.",
+      "Reuses simpler controllers without duplicating logic.",
+    ],
+    weaknesses: [
+      "More moving parts make tuning harder.",
+      "Can inherit blind spots from the underlying sub-policies.",
+    ],
+    notableBehavior:
+      "It switches modes mid-run, fleeing when danger spikes and turning aggressive again when frightened ghosts become reachable.",
   },
 ];
+
+const defaultReportAgentIds = controllerOptions
+  .filter((option) => option.automaticEvaluation !== false)
+  .map((option) => option.id);
+
+function createStoredReportSnapshot(
+  report: ReportsEvaluationResult,
+): ReportsEvaluationResult {
+  return {
+    ...report,
+    agents: report.agents.map((agent) => ({
+      ...agent,
+      episodesData: [],
+    })),
+  };
+}
 
 function App() {
   const [controllerId, setControllerId] = useState<string>(() =>
@@ -162,6 +251,15 @@ function App() {
   const [logCount, setLogCount] = useState(0);
   const [evaluationMetrics, setEvaluationMetrics] = useState<EvaluationMetrics | null>(null);
   const [evaluationBusy, setEvaluationBusy] = useState(false);
+  const [reportEpisodeCount, setReportEpisodeCount] = useState<number>(DEFAULT_REPORT_EPISODES);
+  const [reportMaxSteps, setReportMaxSteps] = useState<number>(DEFAULT_REPORT_MAX_STEPS);
+  const [selectedReportAgentIds, setSelectedReportAgentIds] =
+    useState<string[]>(defaultReportAgentIds);
+  const [reportsBusy, setReportsBusy] = useState(false);
+  const [reportsProgress, setReportsProgress] = useState<ReportsEvaluationProgress | null>(null);
+  const [reportsResult, setReportsResult] = useState<ReportsEvaluationResult | null>(() =>
+    readStorage<ReportsEvaluationResult | null>(REPORT_STORAGE_KEY, null),
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const stateRef = useRef(gameState);
@@ -169,6 +267,7 @@ function App() {
   const showMenuRef = useRef(showMenu);
   const pauseOverlayOpenRef = useRef(pauseOverlayOpen);
   const loggerRef = useRef(new TrajectoryLogger());
+  const reportsAbortRef = useRef<AbortController | null>(null);
   const controllersRef = useRef<Record<string, Controller>>({
     human: humanController,
     random: new RandomAgent(DEFAULT_SEED),
@@ -220,6 +319,12 @@ function App() {
   useEffect(() => {
     loggerRef.current.setEnabled(loggingEnabled);
   }, [loggingEnabled]);
+
+  useEffect(() => {
+    return () => {
+      reportsAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) {
@@ -421,6 +526,12 @@ function App() {
 
     return searchableText.includes(deferredAgentQuery);
   });
+  const reportAgentOptions = controllerOptions.filter(
+    (option) => option.automaticEvaluation !== false,
+  );
+  const selectedReportAgents = reportAgentOptions.filter((option) =>
+    selectedReportAgentIds.includes(option.id),
+  );
   const totalPellets = gameState.maze.initialPellets.size + gameState.maze.initialPowerPellets.size;
   const hasPendingConfigChanges =
     draftControllerId !== controllerId || draftDifficultyId !== difficultyId;
@@ -515,6 +626,100 @@ function App() {
     }, 0);
   }
 
+  function handleToggleReportAgent(agentId: string) {
+    setSelectedReportAgentIds((currentIds) =>
+      currentIds.includes(agentId)
+        ? currentIds.filter((currentId) => currentId !== agentId)
+        : [...currentIds, agentId],
+    );
+  }
+
+  function handleSelectAllReportAgents() {
+    setSelectedReportAgentIds(defaultReportAgentIds);
+  }
+
+  function handleClearReportAgentSelection() {
+    setSelectedReportAgentIds([]);
+  }
+
+  function handleRunReports() {
+    if (reportsBusy || selectedReportAgents.length === 0) {
+      return;
+    }
+
+    const abortController = new AbortController();
+    const reportAgents: ReportAgentDefinition[] = selectedReportAgents.map((option) => ({
+      id: option.id,
+      name: option.label,
+      createController: (seed: number) => createController(option.id, seed),
+    }));
+
+    reportsAbortRef.current = abortController;
+    setReportsBusy(true);
+    setReportsProgress(null);
+
+    void (async () => {
+      try {
+        const report = await evaluateAgentsReport({
+          agents: reportAgents,
+          episodesPerAgent: reportEpisodeCount,
+          maxStepsPerEpisode: reportMaxSteps,
+          difficulty: difficultyId,
+          signal: abortController.signal,
+          onProgress: (progress) => {
+            startTransition(() => {
+              setReportsProgress(progress);
+            });
+          },
+        });
+
+        startTransition(() => {
+          setReportsResult(report);
+          writeStorage(REPORT_STORAGE_KEY, createStoredReportSnapshot(report));
+          setReportsBusy(false);
+        });
+      } catch (error) {
+        console.error("Failed to run agent reports.", error);
+        setReportsBusy(false);
+      } finally {
+        reportsAbortRef.current = null;
+      }
+    })();
+  }
+
+  function handleStopReports() {
+    reportsAbortRef.current?.abort();
+  }
+
+  function handleClearReports() {
+    if (reportsBusy) {
+      return;
+    }
+
+    setReportsResult(null);
+    setReportsProgress(null);
+    writeStorage(REPORT_STORAGE_KEY, null);
+  }
+
+  function handleExportReports() {
+    if (!reportsResult || typeof window === "undefined") {
+      return;
+    }
+
+    const reportJson = JSON.stringify(reportsResult, null, 2);
+    const blob = new Blob([reportJson], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date(reportsResult.generatedAt)
+      .toISOString()
+      .replace(/[:.]/g, "-");
+
+    link.href = url;
+    link.download = `pacman-agent-report-${timestamp}.json`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
   function handleApplySystemConfig() {
     loadBoardForConfig(draftControllerId, draftDifficultyId);
   }
@@ -574,6 +779,8 @@ function App() {
         ? "NEURAL ARCHITECTURE"
         : activePage === "metrics"
           ? "METRIC ANALYTICS"
+          : activePage === "reports"
+            ? "REPORTS"
           : activePage === "logs"
             ? "SIMULATION LOGS"
             : "SYSTEM CONFIG";
@@ -700,6 +907,27 @@ function App() {
               onChange={handleDashboardControllerChange}
             />
           </div>
+        ) : null}
+        {activePage === "reports" ? (
+          <ReportsPanel
+            agents={reportAgentOptions}
+            selectedAgentIds={selectedReportAgentIds}
+            episodesPerAgent={reportEpisodeCount}
+            maxStepsPerEpisode={reportMaxSteps}
+            difficultyLabel={activeDifficultyOption.label}
+            evaluationBusy={reportsBusy}
+            progress={reportsProgress}
+            report={reportsResult}
+            onToggleAgent={handleToggleReportAgent}
+            onEpisodesChange={setReportEpisodeCount}
+            onMaxStepsChange={setReportMaxSteps}
+            onSelectAllAgents={handleSelectAllReportAgents}
+            onClearAgentSelection={handleClearReportAgentSelection}
+            onStartEvaluation={handleRunReports}
+            onStopEvaluation={handleStopReports}
+            onClearResults={handleClearReports}
+            onExportJson={handleExportReports}
+          />
         ) : null}
         {activePage === "logs" ? (
           <div className="page-grid">
