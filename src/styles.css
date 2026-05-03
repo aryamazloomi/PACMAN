@@ -506,6 +506,11 @@ a {
   place-items: center;
 }
 
+.game-box {
+  position: relative;
+  width: min(100%, 456px);
+}
+
 .board-frame-header,
 .board-frame-footer {
   display: flex;
@@ -526,10 +531,8 @@ a {
 }
 
 .game-canvas {
-  justify-self: center;
-  align-self: center;
   display: block;
-  width: min(100%, 456px);
+  width: 100%;
   height: auto;
   border: 1px solid rgba(24, 214, 255, 0.18);
   background: rgba(0, 0, 0, 0.22);

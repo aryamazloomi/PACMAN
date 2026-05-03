@@ -607,23 +607,25 @@ function App() {
                   <span className="board-frame-status">{activeController.name}</span>
                 </div>
                 <div className="board-stage">
-                  <canvas
-                    ref={canvasRef}
-                    className="game-canvas"
-                    onClick={handleBoardPause}
-                  />
+                  <div className="game-box">
+                    <canvas
+                      ref={canvasRef}
+                      className="game-canvas"
+                      onClick={handleBoardPause}
+                    />
+                    {boardOverlayMode ? (
+                      <GameOverlay
+                        mode={boardOverlayMode}
+                        status={gameState.status}
+                        controllerLabel={activeController.name}
+                        onStart={handleStartSimulation}
+                        onResume={handleResume}
+                        onRestart={handleRestart}
+                      />
+                    ) : null}
+                  </div>
                 </div>
                 <div className="board-frame-footer">CAM_04_NORTH_QUADRANT</div>
-                {boardOverlayMode ? (
-                  <GameOverlay
-                    mode={boardOverlayMode}
-                    status={gameState.status}
-                    controllerLabel={activeController.name}
-                    onStart={handleStartSimulation}
-                    onResume={handleResume}
-                    onRestart={handleRestart}
-                  />
-                ) : null}
               </div>
               <AgentBriefing
                 option={selectedControllerOption}
@@ -689,6 +691,13 @@ function App() {
               evaluationMetrics={evaluationMetrics}
               evaluationBusy={evaluationBusy}
               onRunEvaluation={handleRunEvaluation}
+            />
+            <AgentSelector
+              options={controllerOptions}
+              value={controllerId}
+              option={selectedControllerOption}
+              difficultyLabel={activeDifficultyOption.label}
+              onChange={handleDashboardControllerChange}
             />
           </div>
         ) : null}
