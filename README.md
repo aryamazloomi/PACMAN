@@ -84,7 +84,7 @@ The multi-agent Reports tab evaluates agents asynchronously in chunks so the bro
 
 ## Evaluation snapshot
 
-The repository also includes an archived evaluation snapshot from a `1,000`-episode shared-seed run on `May 2, 2026`. That run used the same deterministic seed list for every AI agent and compared them headlessly through the Reports evaluator.
+The repository also includes an archived evaluation snapshot from the Reports tab run completed on `May 2, 2026 at 10:16:28 PM`. That comparison evaluated `5` AI agents, used `1,000` shared seeds per agent, ran at `Standard` difficulty, and used a `5,000` step cap per episode for a total of `5,000` evaluated episodes.
 
 | Agent | Episodes | Avg Score | Best Score | Win Rate | Death Rate | Avg Survival | Avg Pellets | Avg Ghosts | Illegal Moves | Avg Decision |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -96,9 +96,11 @@ The repository also includes an archived evaluation snapshot from a `1,000`-epis
 
 The results tell a useful story:
 
-- `Behavior Tree Agent` achieved the best average score, which supports the decision to use it as the strongest structured non-ML policy in the project.
+- `Behavior Tree Agent` achieved the best average score at `2493.87`, which supports the decision to use it as the strongest structured non-ML policy in the project.
 - `A* Agent` achieved the best win rate at `100%`, showing that explicit planning with danger-aware path cost is extremely reliable even if it is not always the top scorer.
-- `Ghost Avoidance Agent` had the best survival time, but that did not translate into wins. That highlights an important design lesson: living longer is not the same thing as clearing the board efficiently.
+- `Ghost Avoidance Agent` had the best survival time at `46.92 s`, but that did not translate into wins. That highlights an important design lesson: living longer is not the same thing as clearing the board efficiently.
+- `Greedy Pellet Agent` was the most consistent controller in this particular report, with a score standard deviation of `0.00`, because it produced the same `460` score in every recorded run.
+- `Random Agent` tied the lowest illegal-move rate at `0.00` and also registered the fastest decisions in the report at `0.00 ms`, which is expected from a lightweight baseline policy.
 - `Greedy Pellet Agent` and `Random Agent` performed the role they were meant to perform: they act as lower baselines that make the value of planning and tactical arbitration visible.
 - All evaluated agents recorded `0.00` illegal moves, which is a useful validation of the shared legal-action system between controllers and the game engine.
 
