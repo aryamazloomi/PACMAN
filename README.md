@@ -1,146 +1,125 @@
 # Pac-Man AI
 
-Pac-Man AI is a browser-first Pac-Man-style portfolio project built with React, TypeScript, Vite, and HTML Canvas. It supports manual play and a set of switchable AI controllers that all drive Pac-Man through the same shared action interface.
+Pac-Man AI is a browser-first Pac-Man project built as both a playable game and an AI portfolio piece. The idea behind the repo is simple: take a classic arcade loop that people instantly understand, rebuild it with a clean deterministic game core, and use it as a sandbox for comparing decision-making strategies in the browser.
 
-## What is included
+Unlike a desktop-only prototype, this version was intentionally built with `React`, `TypeScript`, `Vite`, and `HTML Canvas` so anyone can open the repository, deploy it to GitHub Pages, and interact with the same simulation directly in the browser. That browser-first decision shaped the whole architecture: the game core stays separate from React, controllers share one action API, rendering is isolated from simulation, and evaluation runs headlessly without depending on the Canvas loop.
 
-- Playable Pac-Man-style maze rendered on Canvas
-- Manual keyboard control
-- Shared deterministic game core with seeded ghost behavior
-- Selectable controllers:
-  - Manual Play
-  - Random Agent
-  - Greedy Pellet Agent
-  - Ghost Avoidance Agent
-  - A* Agent
-  - Behavior Tree Agent
-- Headless evaluation utility with score and latency summaries
-- Browser trajectory logging with JSON export
-- Vitest coverage for core rules, pathfinding, and agent behavior
-- GitHub Pages-ready Vite configuration
+## Project goal
 
-## Tech stack
+The goal of the repository is not just to make “Pac-Man with bots.” It is to show:
 
-- React
-- TypeScript
-- Vite
-- HTML Canvas
-- Vitest
+- how to structure a small but serious game/AI system cleanly
+- how to compare heuristic and search-based agents fairly
+- how to expose that comparison through a usable web UI
+- how to keep the project understandable for students while still looking credible as an engineering portfolio project
 
-## Project structure
+At a high level, the repo combines:
+
+- a deterministic tile-based Pac-Man game engine
+- a browser UI for manual play and controller switching
+- a shared controller interface for both humans and AI agents
+- a headless evaluation system for repeatable experiments
+- trajectory logging for later imitation-learning or replay work
+
+## Why these algorithms
+
+The controllers were chosen as a progression from simple baselines to more structured decision systems rather than jumping straight into heavyweight ML.
+
+### Manual Play
+
+Manual play exists as the human baseline. It helps validate that the controls, timing, collisions, and maze logic feel right before blaming an agent for poor outcomes.
+
+### Random Agent
+
+The random controller is the weakest baseline on purpose. It answers the question: “How much better are the real policies than legal random movement?”
+
+### Greedy Pellet Agent
+
+This agent is the first useful nontrivial policy. It gives the project a local-search baseline focused on short-term reward collection.
+
+### Ghost Avoidance Agent
+
+This adds survival-aware heuristic scoring. It is useful because many game-playing systems fail not because they cannot find reward, but because they underweight risk.
+
+### A* Agent
+
+The A* controller introduces explicit path planning. It is the clearest “classical AI” benchmark in the repo and shows how search improves route quality when danger is folded into path cost.
+
+### Behavior Tree Agent
+
+The behavior tree acts as the strongest structured non-ML controller. It combines multiple tactical modes instead of forcing one heuristic to solve every situation.
+
+### Q-Learning Placeholder
+
+Tabular Q-learning is present only as a placeholder right now. That was intentional: the repo first needed a stable game loop, stable metrics, and a fair evaluator before adding learning logic.
+
+## How the agents are evaluated
+
+The evaluation system is built around fair, game-native metrics rather than classification metrics like accuracy or F1, because these agents are not supervised action predictors.
+
+The Reports workflow evaluates selected AI agents under the same conditions:
+
+- same maze
+- same difficulty
+- same max-step limit
+- same deterministic seed list
+- same scoring and collision rules
+- same headless simulation loop
+
+Each agent is run over repeated episodes, and the evaluator records per-episode outcomes before summarizing them. The report system currently focuses on metrics that matter for a game-playing controller:
+
+- average, median, best, and worst score
+- score consistency via standard deviation
+- average reward
+- win rate and death rate
+- survival steps and survival time
+- pellets collected and power pellets collected
+- ghosts eaten
+- illegal moves
+- wall bumps
+- decision latency
+- lives remaining
+
+The multi-agent Reports tab evaluates agents asynchronously in chunks so the browser does not completely lock up during larger runs like `500` or `1000` episodes. Results can be compared in summary tables, ranked by key metrics, reviewed in per-agent report cards, and exported as JSON.
+
+## Repository structure
 
 ```txt
 src/
-  ai/
-  controllers/
-  evaluation/
-  game/
-  logging/
-  render/
-  ui/
-  utils/
-tests/
+  ai/              pathfinding, heuristics, future learning hooks
+  controllers/     human and AI controller implementations
+  evaluation/      single-agent and multi-agent evaluation logic
+  game/            deterministic core simulation and rules
+  logging/         trajectory capture and export
+  render/          canvas renderer
+  ui/              dashboard pages and panels
+  utils/           storage, random, and grid helpers
+tests/             Vitest coverage for engine, pathfinding, agents, evaluation
+reports/           archived report artifacts
 ```
 
-## Run locally
+## What is already working
 
-1. Install Node.js 20+.
-2. Install dependencies:
+- browser-playable Pac-Man game
+- manual control
+- Random, Greedy, Ghost Avoidance, A*, and Behavior Tree agents
+- deterministic seeded evaluation
+- Reports tab for multi-agent comparison
+- trajectory logging and export
+- GitHub Pages-oriented deployment setup
 
-```bash
-npm install
-```
+## Roadmap
 
-3. Start the dev server:
+The old README had a short TODO list. That roadmap still matters, but it is clearer framed as the next research steps for the repo:
 
-```bash
-npm run dev
-```
+1. Finish the tabular Q-learning path in `src/ai/qLearning/`.
+2. Add replay playback for exported trajectories.
+3. Add stronger visual analysis in Reports, such as charts and comparison history.
+4. Prepare behavioral cloning and deeper RL integrations without bloating the web app itself.
 
-4. Open the local Vite URL in your browser.
+## Docs and artifacts
 
-## Build
+- Setup, running, testing, and deployment guide: [installation-manual.md](installation-manual.md)
+- Archived report artifact: [reports/report-bacth1.pdf](reports/report-bacth1.pdf)
 
-```bash
-npm run build
-```
-
-## Test
-
-```bash
-npm run test
-```
-
-## Deploy to GitHub Pages
-
-1. Install dependencies and build the app:
-
-```bash
-npm install
-npm run build
-```
-
-2. Deploy the built `dist/` directory:
-
-```bash
-npm run deploy
-```
-
-3. If your repository name is not `PACMAN`, update the GitHub Pages base path in `vite.config.ts`.
-
-## How to play
-
-- Arrow keys or `WASD`: move Pac-Man
-- `Space` or `P`: pause or resume
-- `R`: restart from the default seed
-- `ESC`: open the menu
-
-## How to select AI agents
-
-- Use the controller dropdown in the right-hand panel.
-- Switch controllers at any time to compare different movement strategies.
-- Use `Run Evaluation` to benchmark the currently selected controller across multiple headless episodes.
-
-## Evaluation metrics
-
-The evaluation utility reports:
-
-- average score
-- best score
-- average survival time
-- pellets eaten
-- win rate
-- death count
-- average steps per episode
-- average action latency
-
-## Trajectory logging
-
-- Logging is enabled by default.
-- Use `Disable Logging` to stop recording runtime steps.
-- Use `Export Trajectory` to download the current run as JSON.
-
-Each logged step includes:
-
-- step number
-- controller name
-- state summary
-- selected action
-- reward
-- score
-- lives
-- done flag
-- timestamp
-
-## Current limitations
-
-- Movement is tile-based rather than interpolated between tile centers.
-- Evaluation of `Manual Play` is allowed but mainly useful for debugging.
-- Tabular Q-learning and deep RL are still placeholders.
-
-## TODO
-
-- Finish the tabular Q-learning implementation in `src/ai/qLearning/`
-- Add browser-managed replay playback from exported trajectories
-- Add stronger evaluation presets and comparison charts
-- Add future DQN/PPO or imitation-learning integration without bloating the web app
+The PDF in `reports/` is an archived report artifact from the project’s evaluation work. The live source of truth for evaluation behavior is the in-repo evaluation engine and Reports UI.
