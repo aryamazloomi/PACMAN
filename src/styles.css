@@ -501,6 +501,11 @@ a {
   overflow: hidden;
 }
 
+.board-stage {
+  display: grid;
+  place-items: center;
+}
+
 .board-frame-header,
 .board-frame-footer {
   display: flex;
@@ -528,6 +533,7 @@ a {
   height: auto;
   border: 1px solid rgba(24, 214, 255, 0.18);
   background: rgba(0, 0, 0, 0.22);
+  cursor: pointer;
   box-shadow:
     0 0 0 1px rgba(32, 53, 84, 0.5),
     inset 0 0 60px rgba(24, 214, 255, 0.04);
@@ -692,19 +698,8 @@ a {
   padding: 0.85rem 0.9rem;
 }
 
-.controller-display {
-  padding: 0.95rem 1rem;
-  border: 1px solid rgba(71, 98, 152, 0.34);
-  background: rgba(11, 20, 34, 0.92);
-}
-
-.controller-value {
-  display: block;
-  color: var(--cyan);
-  font-family: "Rajdhani", "Trebuchet MS", sans-serif;
-  font-size: 1.35rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.controller-field {
+  margin-bottom: 0.8rem;
 }
 
 .controller-runtime-list {
@@ -885,6 +880,23 @@ a {
   border: 1px solid rgba(205, 242, 250, 0.85);
   background: rgba(7, 10, 20, 0.96);
   box-shadow: 0 0 28px rgba(24, 214, 255, 0.12);
+}
+
+.overlay-card-compact {
+  text-align: center;
+}
+
+.overlay-card-compact h2 {
+  margin: 0 0 0.8rem;
+}
+
+.overlay-card-compact .panel-copy {
+  max-width: 28ch;
+  margin: 0 auto;
+}
+
+.overlay-card-compact .hero-actions {
+  justify-content: center;
 }
 
 @media (max-width: 1280px) {

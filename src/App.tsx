@@ -22,9 +22,9 @@ import { AgentSelector, type AgentOption } from "./ui/AgentSelector";
 import { AgentBriefing } from "./ui/AgentBriefing";
 import { AgentLibrary } from "./ui/AgentLibrary";
 import { ArchiveSidebar, type DashboardPage } from "./ui/ArchiveSidebar";
+import { GameOverlay } from "./ui/GameOverlay";
 import { Hud } from "./ui/Hud";
 import { MetricsPanel } from "./ui/MetricsPanel";
-import { PauseMenu } from "./ui/PauseMenu";
 import { RuntimePanel } from "./ui/RuntimePanel";
 import { SimulationLogsPanel } from "./ui/SimulationLogsPanel";
 import { SystemConfigPanel } from "./ui/SystemConfigPanel";
@@ -150,7 +150,6 @@ function App() {
   );
   const [activePage, setActivePage] = useState<DashboardPage>("dashboard");
   const [showMenu, setShowMenu] = useState(true);
-  const [hasBegun, setHasBegun] = useState(false);
   const [pauseOverlayOpen, setPauseOverlayOpen] = useState(false);
   const [agentQuery, setAgentQuery] = useState("");
   const [draftControllerId, setDraftControllerId] = useState<string>(() =>
@@ -306,7 +305,6 @@ function App() {
       }
 
       setShowMenu(false);
-      setHasBegun(true);
       setPauseOverlayOpen(false);
     };
 
@@ -317,7 +315,6 @@ function App() {
       const nextState = restartGame(stateRef.current, DEFAULT_SEED);
       stateRef.current = nextState;
       setGameState(nextState);
-      setHasBegun(true);
       setShowMenu(false);
       setPauseOverlayOpen(false);
     };
@@ -387,8 +384,7 @@ function App() {
 
       if (key === "escape") {
         event.preventDefault();
-        setShowMenu(true);
-        setPauseOverlayOpen(false);
+        togglePauseFromInput();
       }
     };
 
@@ -435,36 +431,29 @@ function App() {
     });
   }
 
-  function resumeGameFromInput() {
-    const shouldResume =
-      stateRef.current.status === "paused" && stateRef.current.lives > 0;
-
-    if (shouldResume) {
-      const nextState = {
-        ...stateRef.current,
-        status: "running" as const,
-      };
-
-      stateRef.current = nextState;
-      setGameState(nextState);
-    }
-
-    setShowMenu(false);
-    setHasBegun(true);
-    setPauseOverlayOpen(false);
-  }
-
-  function handleStartOrRestart() {
+  function loadBoardForConfig(
+    nextControllerId: string,
+    nextDifficultyId: DifficultyId,
+  ) {
     resetControllers(DEFAULT_SEED);
     loggerRef.current.clear();
     setLogCount(0);
+    setControllerId(nextControllerId);
+    controllerIdRef.current = nextControllerId;
+    setDifficultyId(nextDifficultyId);
+
     const nextState = createGameState({
       seed: DEFAULT_SEED,
-      difficulty: difficultyId,
+      difficulty: nextDifficultyId,
     });
+
     stateRef.current = nextState;
     setGameState(nextState);
-    setHasBegun(true);
+    setShowMenu(true);
+    setPauseOverlayOpen(false);
+  }
+
+  function handleStartSimulation() {
     setShowMenu(false);
     setPauseOverlayOpen(false);
   }
@@ -476,7 +465,6 @@ function App() {
     const nextState = restartGame(stateRef.current, DEFAULT_SEED);
     stateRef.current = nextState;
     setGameState(nextState);
-    setHasBegun(true);
     setShowMenu(false);
     setPauseOverlayOpen(false);
   }
@@ -492,7 +480,6 @@ function App() {
       setGameState(nextState);
     }
 
-    setHasBegun(true);
     setShowMenu(false);
     setPauseOverlayOpen(false);
   }
@@ -528,45 +515,42 @@ function App() {
     }, 0);
   }
 
-  function togglePause() {
-    if (showMenu) {
+  function handleApplySystemConfig() {
+    loadBoardForConfig(draftControllerId, draftDifficultyId);
+  }
+
+  function handleReloadLatestConfig() {
+    loadBoardForConfig(controllerId, difficultyId);
+  }
+
+  function handleDashboardControllerChange(nextControllerId: string) {
+    setControllerId(nextControllerId);
+    controllerIdRef.current = nextControllerId;
+  }
+
+  function handleBoardPause() {
+    if (activePage !== "dashboard" || showMenuRef.current || pauseOverlayOpenRef.current) {
       return;
     }
 
-    if (gameState.status === "won" || gameState.status === "lost") {
+    if (stateRef.current.status === "won" || stateRef.current.status === "lost") {
       return;
     }
 
-    const nextStatus: GameStatus = pauseOverlayOpen ? "running" : "paused";
     const nextState = {
       ...stateRef.current,
-      status: nextStatus,
+      status: "paused" as const,
     };
 
     stateRef.current = nextState;
     setGameState(nextState);
-    setPauseOverlayOpen((currentValue) => !currentValue);
-  }
-
-  function handleApplySystemConfig() {
-    resetControllers(DEFAULT_SEED);
-    loggerRef.current.clear();
-    setLogCount(0);
-    setControllerId(draftControllerId);
-    setDifficultyId(draftDifficultyId);
-    const nextState = createGameState({
-      seed: DEFAULT_SEED,
-      difficulty: draftDifficultyId,
-    });
-    stateRef.current = nextState;
-    setGameState(nextState);
-    setHasBegun(true);
-    setShowMenu(false);
-    setPauseOverlayOpen(false);
+    setPauseOverlayOpen(true);
   }
 
   const statusNote =
-    gameState.status === "won"
+    showMenu
+      ? "The latest loaded configuration is staged on the board. Start the run from the game overlay when ready."
+      : gameState.status === "won"
       ? "All pellets cleared. Restart or switch controllers to compare routes."
       : gameState.status === "lost"
         ? "Pac-Man is out of lives. Restart to try again from the same seed."
@@ -575,13 +559,14 @@ function App() {
         : pauseOverlayOpen
           ? "The simulation is paused."
           : `${activeController.name} is active. Switch controllers anytime to compare styles.`;
-
-  const primaryActionLabel =
-    !hasBegun
-      ? "Initialize Simulation"
-      : showMenu && gameState.status !== "won" && gameState.status !== "lost"
-        ? "Resume Simulation"
-        : "Restart Simulation";
+  const boardOverlayMode =
+    showMenu
+      ? "start"
+      : pauseOverlayOpen
+        ? "paused"
+        : gameState.status === "won" || gameState.status === "lost"
+          ? "finished"
+          : null;
   const activePageLabel =
     activePage === "dashboard"
       ? "CORE DASHBOARD"
@@ -594,17 +579,7 @@ function App() {
             : "SYSTEM CONFIG";
 
   function handlePrimarySidebarAction() {
-    if (!hasBegun) {
-      handleStartOrRestart();
-      return;
-    }
-
-    if (showMenu && gameState.status !== "won" && gameState.status !== "lost") {
-      handleResume();
-      return;
-    }
-
-    handleRestart();
+    handleReloadLatestConfig();
   }
 
   return (
@@ -612,7 +587,6 @@ function App() {
       <ArchiveSidebar
         activeControllerName={activeController.name}
         activePage={activePage}
-        primaryActionLabel={primaryActionLabel}
         onPageChange={setActivePage}
         onPrimaryAction={handlePrimarySidebarAction}
       />
@@ -632,13 +606,24 @@ function App() {
                   <span className="live-indicator">LIVE_SIM_STREAM</span>
                   <span className="board-frame-status">{activeController.name}</span>
                 </div>
-                <canvas ref={canvasRef} className="game-canvas" />
+                <div className="board-stage">
+                  <canvas
+                    ref={canvasRef}
+                    className="game-canvas"
+                    onClick={handleBoardPause}
+                  />
+                </div>
                 <div className="board-frame-footer">CAM_04_NORTH_QUADRANT</div>
-                <PauseMenu
-                  open={pauseOverlayOpen}
-                  onResume={togglePause}
-                  onRestart={handleRestart}
-                />
+                {boardOverlayMode ? (
+                  <GameOverlay
+                    mode={boardOverlayMode}
+                    status={gameState.status}
+                    controllerLabel={activeController.name}
+                    onStart={handleStartSimulation}
+                    onResume={handleResume}
+                    onRestart={handleRestart}
+                  />
+                ) : null}
               </div>
               <AgentBriefing
                 option={selectedControllerOption}
@@ -663,8 +648,11 @@ function App() {
                 statusNote={statusNote}
               />
               <AgentSelector
+                options={controllerOptions}
+                value={controllerId}
                 option={selectedControllerOption}
                 difficultyLabel={activeDifficultyOption.label}
+                onChange={handleDashboardControllerChange}
               />
             </section>
           </div>
@@ -713,8 +701,11 @@ function App() {
               onExportLog={handleExportLog}
             />
             <AgentSelector
+              options={controllerOptions}
+              value={controllerId}
               option={selectedControllerOption}
               difficultyLabel={activeDifficultyOption.label}
+              onChange={handleDashboardControllerChange}
             />
           </div>
         ) : null}

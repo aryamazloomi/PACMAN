@@ -69,12 +69,13 @@ export function SystemConfigPanel({
       </div>
       <p className="panel-copy status-copy">
         Difficulty changes apply to both manual play and AI runs by changing
-        ghost pace, frightened duration, and house release timing. Applying the
-        config restarts the simulation from the seed.
+        ghost pace, frightened duration, and house release timing. Loading the
+        config resets the board and waits for a manual start from the dashboard
+        overlay.
       </p>
       <div className="hero-actions compact-actions">
         <button className="primary-button" onClick={onApply}>
-          {hasPendingChanges ? "Commit Changes" : "Reapply Settings"}
+          {hasPendingChanges ? "Load Config to Board" : "Reload Board Config"}
         </button>
       </div>
     </section>

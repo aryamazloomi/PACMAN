@@ -12,13 +12,19 @@ export interface AgentOption {
 }
 
 interface AgentSelectorProps {
+  options: readonly AgentOption[];
+  value: string;
   option: AgentOption;
   difficultyLabel: string;
+  onChange: (value: string) => void;
 }
 
 export function AgentSelector({
+  options,
+  value,
   option,
   difficultyLabel,
+  onChange,
 }: AgentSelectorProps) {
   const autonomyBars = Array.from(
     { length: 5 },
@@ -33,9 +39,16 @@ export function AgentSelector({
           <p className="panel-kicker">Controller</p>
         </div>
       </div>
-      <div className="controller-display">
-        <span className="controller-value">{option.label}</span>
-      </div>
+      <label className="field controller-field">
+        <span>Active model</span>
+        <select value={value} onChange={(event) => onChange(event.target.value)}>
+          {options.map((controllerOption) => (
+            <option key={controllerOption.id} value={controllerOption.id}>
+              {controllerOption.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="meta-chip-row">
         <span className="meta-chip">{option.category}</span>
         <span className="meta-chip">{option.planningStyle}</span>

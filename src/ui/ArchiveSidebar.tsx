@@ -8,7 +8,6 @@ export type DashboardPage =
 interface ArchiveSidebarProps {
   activeControllerName: string;
   activePage: DashboardPage;
-  primaryActionLabel: string;
   onPageChange: (page: DashboardPage) => void;
   onPrimaryAction: () => void;
 }
@@ -24,7 +23,6 @@ const navItems: Array<{ page: DashboardPage; label: string }> = [
 export function ArchiveSidebar({
   activeControllerName,
   activePage,
-  primaryActionLabel,
   onPageChange,
   onPrimaryAction,
 }: ArchiveSidebarProps) {
@@ -58,11 +56,11 @@ export function ArchiveSidebar({
       </div>
       <div className="sidebar-footer">
         <button className="sidebar-primary-button" onClick={onPrimaryAction}>
-          {primaryActionLabel}
+          Reload Latest Config
         </button>
         <p className="sidebar-help">
-          Core gameplay stays on the dashboard. Deeper architecture, metrics,
-          logs, and config now live on their own pages.
+          Reload the currently applied controller and difficulty into an idle
+          board state. Starting the run now happens from the in-game overlay.
         </p>
         <div className="sync-pill">ARCHIVE_SYNC_ACTIVE</div>
       </div>
