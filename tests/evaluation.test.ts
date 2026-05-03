@@ -8,6 +8,10 @@ import {
   evaluateControllerReport,
 } from "../src/evaluation/evaluateAgent";
 import {
+  evaluateAgentsReport,
+  type ReportAgentDefinition,
+} from "../src/evaluation/reports";
+import {
   generateEvaluationSeeds,
   summarizeEpisodeResults,
   type EpisodeResult,
@@ -18,6 +22,14 @@ class IllegalMoveController implements Controller {
 
   selectAction(_state: GameStateView): Action {
     return Action.Up;
+  }
+}
+
+class StopController implements Controller {
+  name = "Stop Tester";
+
+  selectAction(_state: GameStateView): Action {
+    return Action.Stop;
   }
 }
 
@@ -112,5 +124,58 @@ describe("headless evaluation", () => {
 
     expect(report.episodes).toBe(3);
     expect(report.episodesData.map((episode) => episode.seed)).toEqual([5, 12, 20]);
+  });
+});
+
+describe("multi-agent reports", () => {
+  const agents: ReportAgentDefinition[] = [
+    {
+      id: "illegal",
+      name: "Illegal Agent",
+      createController: (_seed: number) => new IllegalMoveController(),
+    },
+    {
+      id: "stop",
+      name: "Stop Agent",
+      createController: (_seed: number) => new StopController(),
+    },
+  ];
+
+  it("evaluates each agent on the same seed list", async () => {
+    const report = await evaluateAgentsReport({
+      agents,
+      seeds: [31, 32, 33],
+      maxStepsPerEpisode: 1,
+      chunkSize: 1,
+    });
+
+    expect(report.settings.seeds).toEqual([31, 32, 33]);
+    expect(report.agents).toHaveLength(2);
+    expect(report.agents[0].episodesData.map((episode) => episode.seed)).toEqual([31, 32, 33]);
+    expect(report.agents[1].episodesData.map((episode) => episode.seed)).toEqual([31, 32, 33]);
+  });
+
+  it("reports progress and supports cancellation", async () => {
+    const progressEvents: number[] = [];
+    const controller = new AbortController();
+
+    const report = await evaluateAgentsReport({
+      agents,
+      episodesPerAgent: 5,
+      maxStepsPerEpisode: 1,
+      chunkSize: 1,
+      signal: controller.signal,
+      onProgress: (progress) => {
+        progressEvents.push(progress.completedEpisodes);
+
+        if (progress.completedEpisodes >= 1) {
+          controller.abort();
+        }
+      },
+    });
+
+    expect(progressEvents[0]).toBe(0);
+    expect(report.cancelled).toBe(true);
+    expect(report.completedAgents).toBeLessThan(agents.length);
   });
 });
