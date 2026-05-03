@@ -82,6 +82,26 @@ Each agent is run over repeated episodes, and the evaluator records per-episode 
 
 The multi-agent Reports tab evaluates agents asynchronously in chunks so the browser does not completely lock up during larger runs like `500` or `1000` episodes. Results can be compared in summary tables, ranked by key metrics, reviewed in per-agent report cards, and exported as JSON.
 
+## Evaluation snapshot
+
+The repository also includes an archived evaluation snapshot from a `1,000`-episode shared-seed run on `May 2, 2026`. That run used the same deterministic seed list for every AI agent and compared them headlessly through the Reports evaluator.
+
+| Agent | Episodes | Avg Score | Best Score | Win Rate | Death Rate | Avg Survival | Avg Pellets | Avg Ghosts | Illegal Moves | Avg Decision |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Behavior Tree Agent | 1,000 | 2493.9 | 3760 | 42% | 58% | 40.77 s | 113.4 | 4.80 | 0.00 | 0.55 ms |
+| A* Agent | 1,000 | 2354.7 | 2760 | 100% | 0% | 34.70 s | 126.0 | 1.98 | 0.00 | 0.69 ms |
+| Ghost Avoidance Agent | 1,000 | 1001.9 | 2070 | 0% | 100% | 46.92 s | 77.7 | 0.40 | 0.00 | 0.01 ms |
+| Greedy Pellet Agent | 1,000 | 460.0 | 460 | 0% | 100% | 9.23 s | 41.0 | 0.00 | 0.00 | 0.00 ms |
+| Random Agent | 1,000 | 153.1 | 730 | 0% | 100% | 12.68 s | 15.0 | 0.01 | 0.00 | 0.00 ms |
+
+The results tell a useful story:
+
+- `Behavior Tree Agent` achieved the best average score, which supports the decision to use it as the strongest structured non-ML policy in the project.
+- `A* Agent` achieved the best win rate at `100%`, showing that explicit planning with danger-aware path cost is extremely reliable even if it is not always the top scorer.
+- `Ghost Avoidance Agent` had the best survival time, but that did not translate into wins. That highlights an important design lesson: living longer is not the same thing as clearing the board efficiently.
+- `Greedy Pellet Agent` and `Random Agent` performed the role they were meant to perform: they act as lower baselines that make the value of planning and tactical arbitration visible.
+- All evaluated agents recorded `0.00` illegal moves, which is a useful validation of the shared legal-action system between controllers and the game engine.
+
 ## Repository structure
 
 ```txt
