@@ -38,6 +38,7 @@ export interface PacmanEntity {
   spawn: Position;
   direction: Action;
   desiredDirection: Action;
+  isMoving: boolean;
   moveProgressMs: number;
 }
 

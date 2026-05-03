@@ -187,7 +187,7 @@ function resolvePacmanDirection(
     events.wallBump = true;
   }
 
-  if (legalActions.includes(currentDirection)) {
+  if (state.pacman.isMoving && legalActions.includes(currentDirection)) {
     return currentDirection;
   }
 
@@ -368,10 +368,12 @@ function movePacman(state: GameState, events: StepEvents, elapsedMs: number): vo
   state.pacman.direction = direction;
 
   if (direction === Action.Stop) {
+    state.pacman.isMoving = false;
     state.pacman.moveProgressMs = 0;
     return;
   }
 
+  state.pacman.isMoving = true;
   state.pacman.position = movePosition(state.pacman.position, direction);
   applyPelletCollection(state, events);
 }

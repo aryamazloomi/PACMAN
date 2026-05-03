@@ -179,6 +179,19 @@ describe("game core", () => {
     expect(result.state.pacman.direction).toBe(Action.Stop);
   });
 
+  it("continues in the current direction when already moving and a turn is blocked", () => {
+    const state = createGameState({ readyDelayMs: 0 });
+    const firstMove = advanceGame(state, Action.Left, PACMAN_MOVE_INTERVAL_MS);
+    const blockedTurn = advanceGame(firstMove.state, Action.Up, PACMAN_MOVE_INTERVAL_MS);
+
+    expect(blockedTurn.events.wallBump).toBe(true);
+    expect(blockedTurn.state.pacman.position).toEqual({
+      x: firstMove.state.pacman.position.x - 1,
+      y: firstMove.state.pacman.position.y,
+    });
+    expect(blockedTurn.state.pacman.direction).toBe(Action.Left);
+  });
+
   it("activates frightened mode when a power pellet is collected", () => {
     const maze = createMaze([
       "#####",

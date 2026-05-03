@@ -8,6 +8,7 @@ export function createPacman(maze: Maze): PacmanEntity {
     spawn: { ...maze.pacmanSpawn },
     direction: Action.Left,
     desiredDirection: Action.Stop,
+    isMoving: false,
     moveProgressMs: 0,
   };
 }
