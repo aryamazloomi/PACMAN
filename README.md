@@ -4,6 +4,8 @@ Pac-Man AI is a browser-first Pac-Man project built as both a playable game and 
 
 Unlike a desktop-only prototype, this version was intentionally built with `React`, `TypeScript`, `Vite`, and `HTML Canvas` so anyone can open the repository, deploy it to GitHub Pages, and interact with the same simulation directly in the browser. That browser-first decision shaped the whole architecture: the game core stays separate from React, controllers share one action API, rendering is isolated from simulation, and evaluation runs headlessly without depending on the Canvas loop.
 
+Live deployment: https://aryamazloomi.github.io/PACMAN/
+
 ## Project goal
 
 The goal of the repository is not just to make “Pac-Man with bots.” It is to show:
